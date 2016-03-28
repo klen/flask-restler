@@ -30,10 +30,11 @@ Example "Hello User" with the Flask-resler:
 
     app.register_blueprint(api)
 
+    if __name__ == '__main__':
+        app.run()
 
-.. code-block:: sh
 
-    $ http localhost/api/v1/hello
+Run the application and open http://localhost:5000/api/v1/ in your browser.
 
 
 .. _contents:
