@@ -1,4 +1,5 @@
 import peewee as pw
+import datetime as dt
 from playhouse.db_url import connect
 
 
@@ -15,6 +16,7 @@ class Role(pw.Model):
 
 class User(pw.Model):
 
+    created = pw.DateTimeField(default=dt.datetime.utcnow)
     login = pw.CharField(255)
     name = pw.CharField(255, null=True)
     password = pw.CharField(127, null=True)
@@ -63,3 +65,6 @@ def test_resource(app, api, client):
 
     response = client.get('/api/v1/user')
     assert not response.json
+
+    response = client.get('/api/v1/_specs')
+    assert response.json

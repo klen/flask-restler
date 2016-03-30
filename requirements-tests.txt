@@ -1,8 +1,8 @@
 -r requirements.txt
 -e .
 
-marshmallow-sqlalchemy  == 0.8.0
-marshmallow-peewee      == 0.2.0
+marshmallow-sqlalchemy  >= 0.8.0
+marshmallow-peewee      >= 0.2.1
 
 ipdb                    == 0.9.0
 pytest                  == 2.8.7
