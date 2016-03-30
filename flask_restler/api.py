@@ -17,7 +17,7 @@ class Api(Blueprint):
 
     """Implement REST API."""
 
-    def __init__(self, name, import_name, specs='/', version="1", url_prefix=None, **kwargs):
+    def __init__(self, name, import_name, specs=True, version="1", url_prefix=None, **kwargs):
         self.version = version
         self.specs = specs
 

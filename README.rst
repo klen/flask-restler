@@ -60,6 +60,8 @@ Installation
 Usage
 =====
 
+Docs in progress. Would like to help? Create a PR.
+
 .. _bugtracker:
 
 Bug tracker

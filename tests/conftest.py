@@ -57,17 +57,3 @@ def api(app):
     api = Api('REST API', __name__, url_prefix="/api/v1")
     api.register(app)
     return api
-
-
-@pytest.fixture(scope='session')
-def sa_engine():
-    from sqlalchemy import create_engine
-    return create_engine('sqlite:///:memory:', echo=True)
-
-
-@pytest.fixture(scope='session')
-def sa_session(sa_engine):
-    from sqlalchemy.orm import sessionmaker
-    Session = sessionmaker()
-    Session.configure(bind=sa_engine)
-    return Session()

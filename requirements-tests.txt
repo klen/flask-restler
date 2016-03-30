@@ -1,7 +1,10 @@
 -r requirements.txt
 -e .
 
-ipdb                == 0.9.0
-pytest              == 2.8.7
-pytest-flask        == 0.10.0
-pytest-sugar        == 0.5.1
+marshmallow-sqlalchemy  == 0.8.0
+marshmallow-peewee      == 0.2.0
+
+ipdb                    == 0.9.0
+pytest                  == 2.8.7
+pytest-flask            == 0.10.0
+pytest-sugar            == 0.5.1

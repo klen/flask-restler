@@ -1,6 +1,6 @@
-from sqlalchemy.ext.declarative import declarative_base
 import pytest
 import sqlalchemy as sa
+from sqlalchemy.ext.declarative import declarative_base
 
 
 Model = declarative_base()
@@ -26,6 +26,19 @@ class User(Model):
 
     role = sa.orm.relationship(Role)
 
+
+@pytest.fixture(scope='session')
+def sa_engine():
+    from sqlalchemy import create_engine
+    return create_engine('sqlite:///:memory:', echo=True)
+
+
+@pytest.fixture(scope='session')
+def sa_session(sa_engine):
+    from sqlalchemy.orm import sessionmaker
+    Session = sessionmaker()
+    Session.configure(bind=sa_engine)
+    return Session()
 
 @pytest.fixture(scope='session', autouse=True)
 def migrate(sa_engine):

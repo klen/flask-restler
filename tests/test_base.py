@@ -99,9 +99,3 @@ def test_pagination(api, client):
     response = client.get('/api/v1/test?page=2')
     assert len(response.json) == 20
     assert response.json[0] == 41
-
-
-def test_documentation(api, client):
-    response = client.get('/api/v1/')
-    import ipdb; ipdb.set_trace()  # XXX BREAKPOINT
-
