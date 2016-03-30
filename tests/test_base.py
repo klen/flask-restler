@@ -33,7 +33,7 @@ def test_resource2(api, client):
     DATA = [1, 2]
 
     @api.connect
-    class SecondResouce(Resource):
+    class SecondResource(Resource):
 
         methods = 'get', 'post', 'put'
 
@@ -59,6 +59,8 @@ def test_resource2(api, client):
         @route('/custom22/test', methods=['get', 'post'])
         def custom2(**kwargs):
             return 'CUSTOM2'
+
+    assert SecondResource.meta.endpoints
 
     response = client.get('/api/v1/two')
     assert response.json == DATA
@@ -99,3 +101,20 @@ def test_pagination(api, client):
     response = client.get('/api/v1/test?page=2')
     assert len(response.json) == 20
     assert response.json[0] == 41
+
+
+def test_specs(api, client):
+    from flask_restler import Resource, route
+
+    @api.connect
+    class HelloResource(Resource):
+
+        @route('/world')
+        def world(self, **kwargs):
+            return 'Hello, World!'
+
+        def get(self, resource=None, **kwargs):
+            return 'Hello, %s!' % (resource and resource.title() or 'World')
+
+    response = client.get('/api/v1/_specs')
+    assert response.json

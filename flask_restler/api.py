@@ -69,30 +69,32 @@ class Api(Blueprint):
 
         api = self
 
-        def wrapper(resource):
-            api.resources.append(resource)
-            if not issubclass(resource, Resource):
+        def wrapper(res):
+            if not issubclass(res, Resource):
                 raise ValueError('Resource should be subclass of api.Resource.')
 
-            url_ = resource.meta.url = url or resource.meta.url or ('/%s' % resource.meta.name)
-            view_func = resource.as_view(resource.meta.name, api)
+            api.resources.append(res)
+
+            url_ = res.meta.url = url or res.meta.url or ('/%s' % res.meta.name)
+            view_func = res.as_view(res.meta.name, api)
             api.add_url_rule(url_, view_func=view_func, **options)
 
-            for view_, (route_, endpoint_, options_) in resource.meta.endpoints.values():
+            for view_, (route_, endpoint_, options_) in res.meta.endpoints.values():
                 api.add_url_rule('%s/%s' % (url_, route_.strip('/')), view_func=view_,
                                  defaults={'endpoint': endpoint_}, **options_)
 
             url_detail_ = url_detail
             if url_detail is DEFAULT:
-                url_detail_ = resource.meta.url_detail = resource.meta.url_detail or \
-                    ('%s/<%s>' % (url_, resource.meta.name))
+                url_detail_ = res.meta.url_detail = res.meta.url_detail or \
+                    ('%s/<%s>' % (url_, res.meta.name))
 
             if url_detail:
                 api.add_url_rule(url_detail_, view_func=view_func, **options)
 
             if api.app is not None:
-                return Blueprint.register(api, api.app, {}, False)
-            return resource
+                Blueprint.register(api, api.app, {}, False)
+
+            return res
 
         if resource is not None and issubclass(resource, Resource):
             return wrapper(resource)
@@ -132,12 +134,12 @@ class Api(Blueprint):
                 'responses': {200: "OK"}
             }
 
-            for endpoint, url in resource.meta.endpoints:
-                specs['paths']["%s/%s" % (resource.meta.url, url)] = path = {}
-                view = getattr(resource, endpoint)
-                path['get'] = dict(summary=view.__doc__, description=view.__doc__, **defaults)
-                if hasattr(view, 'specs'):
-                    path['get'].update(view.specs)
+            for endpoint, (url_, name_, params_) in resource.meta.endpoints.values():
+                specs['paths']["%s%s" % (resource.meta.url, url_)] = path = {}
+                path['get'] = dict(
+                    summary=endpoint.__doc__, description=endpoint.__doc__, **defaults)
+                if hasattr(endpoint, 'specs'):
+                    path['get'].update(endpoint.specs)
 
             specs['paths'][resource.meta.url] = path = {}
             for method in ('get', 'post'):
@@ -188,8 +190,8 @@ class Api(Blueprint):
                             }
                         })
 
-                if resource.meta.schema_api:
-                    path[method].update(resource.meta.schema_api)
+                if resource.meta.specs:
+                    path[method].update(resource.meta.specs)
 
         if isinstance(self.specs, dict):
             specs.update(self.specs)
