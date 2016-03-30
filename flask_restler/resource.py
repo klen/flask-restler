@@ -16,9 +16,13 @@ class ResourceOptions(object):
     """Prepare resource options."""
 
     def __init__(self, cls):
+
+        # Store link to self.meta
         self.meta = meta = getattr(cls, "Meta", None)
 
         self.cls = cls
+
+        # Inherit meta from parents
         for base in reversed(cls.mro()):
             if not hasattr(base, "Meta"):
                 continue
@@ -28,20 +32,28 @@ class ResourceOptions(object):
                     continue
                 setattr(self, k, v)
 
+        # Generate name
         self.name = (meta and getattr(meta, 'name', None)) or \
             cls.__name__.lower().split('resource', 1)[0]
 
         if self.per_page:
             self.per_page = int(self.per_page)
 
-        if self.schema_api:
-            self.schema_api = dict(self.schema_api)
+        if self.specs:
+            self.specs = dict(self.specs)
 
+        # Setup endpoints
         self.endpoints = getattr(self, 'endpoints', {})
         self.endpoints.update({
             value.route[1]: (value, value.route) for value in cls.__dict__.values()
             if hasattr(value, 'route') and isinstance(value.route, tuple)
         })
+
+        # Setup schema_meta
+        self.schema_meta = self.schema_meta or {
+            k[7:]: self.__dict__[k] for k in self.__dict__
+            if k.startswith('schema_') and not k == 'schema_meta'
+        }
 
     def __repr__(self):
         return "<Options %s>" % self.cls
@@ -82,7 +94,13 @@ class Resource(with_metaclass(ResourceMeta, View)):
         # url_detail: URL for resource detail, if it is None it will be calculated
         url = url_detail = None
 
-        schema_api = None
+        specs = None
+
+        # marshmallow.Schema.Meta options
+        # -------------------------------
+
+        # Redefine Schema.Meta completely
+        schema_meta = None
 
     def __init__(self, api=None, **kwargs):
         self.api = api

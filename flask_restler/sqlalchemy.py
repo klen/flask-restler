@@ -45,7 +45,6 @@ class ModelResource(Resource):
         session = None
         primary_key = None
         schema = {}
-        schema_meta = {}
 
     def get_many(self, *args, **kwargs):
         return self.meta.session.query(self.meta.model).filter()

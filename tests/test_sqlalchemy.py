@@ -40,6 +40,7 @@ def sa_session(sa_engine):
     Session.configure(bind=sa_engine)
     return Session()
 
+
 @pytest.fixture(scope='session', autouse=True)
 def migrate(sa_engine):
     Model.metadata.create_all(sa_engine)
@@ -56,6 +57,7 @@ def test_resource(app, api, client, sa_session):
         class Meta:
             model = User
             session = sa_session
+            schema_exclude = 'password',
 
     response = client.get('/api/v1/user')
     assert not response.json
@@ -64,6 +66,7 @@ def test_resource(app, api, client, sa_session):
         'login': 'mike',
         'name': 'Mike Bacon',
     })
+    assert 'password' not in response.json
     assert response.json
 
     response = client.put_json('/api/v1/user/1', {

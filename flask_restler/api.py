@@ -136,8 +136,8 @@ class Api(Blueprint):
                 specs['paths']["%s/%s" % (resource.meta.url, url)] = path = {}
                 view = getattr(resource, endpoint)
                 path['get'] = dict(summary=view.__doc__, description=view.__doc__, **defaults)
-                if hasattr(view, 'schema_api'):
-                    path['get'].update(view.schema_api)
+                if hasattr(view, 'specs'):
+                    path['get'].update(view.specs)
 
             specs['paths'][resource.meta.url] = path = {}
             for method in ('get', 'post'):
@@ -157,8 +157,8 @@ class Api(Blueprint):
                         }
                     }]
 
-                if resource.meta.schema_api:
-                    path[method].update(resource.meta.schema_api)
+                if resource.meta.specs:
+                    path[method].update(resource.meta.specs)
 
             if resource.meta.url_detail:
                 url_detail = resource.meta.url_detail.replace('<', '{').replace('>', '}')

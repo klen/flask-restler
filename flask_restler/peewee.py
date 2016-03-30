@@ -33,7 +33,6 @@ class ModelResource(Resource):
     class Meta:
         model = None
         schema = {}
-        schema_meta = {}
 
     def get_many(self, *args, **kwargs):
         return self.meta.model.select()

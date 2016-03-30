@@ -38,6 +38,7 @@ def test_resource(app, api, client):
 
         class Meta:
             model = User
+            schema_exclude = 'password',
 
     response = client.get('/api/v1/user')
     assert not response.json
@@ -46,6 +47,7 @@ def test_resource(app, api, client):
         'login': 'mike',
         'name': 'Mike Bacon',
     })
+    assert 'password' not in response.json
     assert response.json
 
     response = client.put_json('/api/v1/user/1', {
