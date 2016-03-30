@@ -79,8 +79,8 @@ class Api(Blueprint):
             view_func = res.as_view(res.meta.name, api)
             api.add_url_rule(url_, view_func=view_func, **options)
 
-            for view_, (route_, endpoint_, options_) in res.meta.endpoints.values():
-                api.add_url_rule('%s/%s' % (url_, route_.strip('/')), view_func=view_,
+            for _, (route_, endpoint_, options_) in res.meta.endpoints.values():
+                api.add_url_rule('%s/%s' % (url_, route_.strip('/')), view_func=view_func,
                                  defaults={'endpoint': endpoint_}, **options_)
 
             url_detail_ = url_detail
