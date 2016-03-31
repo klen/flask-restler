@@ -131,10 +131,14 @@ class Resource(with_metaclass(ResourceMeta, View)):
         try:
             method = getattr(self, request.method.lower())
             response = method(*args, **kwargs)
-            return current_app.response_class(
-                dumps(response, indent=2), mimetype='application/json')
+            return self.to_json_response(response)
         except AttributeError:
             return abort(405)
+
+    def to_json_response(self, response):
+        """Serialize simple response to Flask response."""
+        return current_app.response_class(
+            dumps(response, indent=2), mimetype='application/json')
 
     def authorize(self, *args, **kwargs):
         """Default authorization method."""
