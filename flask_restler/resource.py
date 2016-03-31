@@ -156,9 +156,8 @@ class Resource(with_metaclass(ResourceMeta, View)):
     def get_schema(self, resource=None, **kwargs):
         return self.Schema and self.Schema()
 
-    def load(self, resource=None, **kwargs):
+    def load(self, data, resource=None, **kwargs):
         schema = self.get_schema(resource=resource, **kwargs)
-        data = request.json or {}
         resource, errors = schema.load(data, partial=resource is not None)
         if errors:
             raise APIError('Bad request', payload={'errors': errors})
@@ -186,7 +185,8 @@ class Resource(with_metaclass(ResourceMeta, View)):
 
     def post(self, **kwargs):
         """Create a resource."""
-        resource = self.load(**kwargs)
+        data = request.json or {}
+        resource = self.load(data, **kwargs)
         resource = self.save(resource)
         return self.to_simple(resource)
 
