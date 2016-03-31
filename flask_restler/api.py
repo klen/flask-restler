@@ -135,7 +135,8 @@ class Api(Blueprint):
             }
 
             for endpoint, (url_, name_, params_) in resource.meta.endpoints.values():
-                specs['paths']["%s%s" % (resource.meta.url, url_)] = path = {}
+                specs['paths'][
+                    "%s%s" % (resource.meta.url, url_flask_to_swagger(url_))] = path = {}
                 path['get'] = dict(
                     summary=endpoint.__doc__, description=endpoint.__doc__, **defaults)
                 if hasattr(endpoint, 'specs'):
@@ -163,7 +164,7 @@ class Api(Blueprint):
                     path[method].update(resource.meta.specs)
 
             if resource.meta.url_detail:
-                url_detail = resource.meta.url_detail.replace('<', '{').replace('>', '}')
+                url_detail = url_flask_to_swagger(resource.meta.url_detail)
                 path = specs['paths'][url_detail] = {}
                 for method in ('get', 'put', 'delete'):
                     if method.upper() not in resource.methods or not hasattr(resource, 'post'):
@@ -202,3 +203,8 @@ class Api(Blueprint):
         response.headers.add_header('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT')
 
         return response
+
+
+def url_flask_to_swagger(source):
+    """Convert Flask URL to swagger path."""
+    return source.replace('<', '{').replace('>', '}')
