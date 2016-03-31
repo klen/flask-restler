@@ -50,11 +50,13 @@ class ModelResource(Resource):
 
         return resource
 
-    def get_schema(self, resource=None):
+    def get_schema(self, resource=None, **kwargs):
         return self.Schema(instance=resource)
 
     def save(self, resource):
+        """Save resource to DB."""
         resource.save()
+        return resource
 
     def delete(self, resource=None, **kwargs):
         """Delete a resource."""

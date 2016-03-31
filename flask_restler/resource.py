@@ -153,12 +153,20 @@ class Resource(with_metaclass(ResourceMeta, View)):
         """Load resource."""
         return kwargs.get(self.meta.name)
 
-    def get_schema(self, resource=None):
+    def get_schema(self, resource=None, **kwargs):
         return self.Schema and self.Schema()
 
-    def save(self, obj):
+    def load(self, resource=None, **kwargs):
+        schema = self.get_schema(resource=resource, **kwargs)
+        data = request.json or {}
+        resource, errors = schema.load(data, partial=resource is not None)
+        if errors:
+            raise APIError('Bad request', payload={'errors': errors})
+        return resource
+
+    def save(self, resource):
         """Create a resource."""
-        return obj
+        return resource
 
     def to_simple(self, data, many=False):
         """Serialize response to simple object (list, dict)."""
@@ -178,24 +186,16 @@ class Resource(with_metaclass(ResourceMeta, View)):
 
     def post(self, **kwargs):
         """Create a resource."""
-        schema = self.get_schema()
-        obj, errors = schema.load(request.json or {})
-        if errors:
-            raise APIError('Bad request', payload={'errors': errors})
-        self.save(obj)
-        return self.to_simple(obj)
+        resource = self.load(**kwargs)
+        resource = self.save(resource)
+        return self.to_simple(resource)
 
     def put(self, resource=None, **kwargs):
         """Update a resource."""
         if resource is None:
             raise APIError('Resource not found', status_code=404)
 
-        schema = self.get_schema(resource=resource)
-        obj, errors = schema.load(request.json or {}, partial=True)
-        if errors:
-            raise APIError('Bad request', payload={'errors': errors})
-        self.save(obj)
-        return self.to_simple(obj)
+        return self.post(resource=resource, **kwargs)
 
     patch = put
 

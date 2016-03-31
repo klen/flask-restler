@@ -61,12 +61,14 @@ class ModelResource(Resource):
 
         return resource
 
-    def get_schema(self, resource=None):
+    def get_schema(self, resource=None, **kwargs):
         return self.Schema(session=self.meta.session, instance=resource)
 
-    def save(self, obj):
-        self.meta.session.add(obj)
+    def save(self, resource):
+        """Save resource to DB."""
+        self.meta.session.add(resource)
         self.meta.session.commit()
+        return resource
 
     def delete(self, resource=None, **kwargs):
         """Delete a resource."""
