@@ -110,6 +110,8 @@ class Resource(with_metaclass(ResourceMeta, View)):
         self.auth = self.authorize(*args, **kwargs)
         self.collection = self.get_many(*args, **kwargs)
         resource = self.get_one(*args, **kwargs)
+        if resource is not None:
+            kwargs['resource'] = resource
 
         endpoint = kwargs.pop('endpoint', None)
         if endpoint and hasattr(self, endpoint):
@@ -127,8 +129,6 @@ class Resource(with_metaclass(ResourceMeta, View)):
                 raise APIError('Pagination params are invalid.')
 
         try:
-            if resource is not None:
-                kwargs['resource'] = resource
             method = getattr(self, request.method.lower())
             response = method(*args, **kwargs)
             return current_app.response_class(
