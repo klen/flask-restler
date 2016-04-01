@@ -3,6 +3,18 @@ The Flask RESTler
 
 .. _badges:
 
+.. image:: http://img.shields.io/travis/klen/falsk-restler.svg?style=flat-square
+    :target: http://travis-ci.org/klen/falsk-restler
+    :alt: Build Status
+
+.. image:: http://img.shields.io/pypi/v/flask-restler.svg?style=flat-square
+    :target: https://pypi.python.org/pypi/flask-restler
+    :alt: Version
+
+.. image:: http://img.shields.io/pypi/dm/flask-restler.svg?style=flat-square
+    :target: https://pypi.python.org/pypi/flask-restler
+    :alt: Downloads
+
 .. _description:
 
 The Flask RESTler -- Build REST API for Flask_ using Marshmallow_.
