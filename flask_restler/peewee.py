@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 from .resource import ResourceOptions, Resource, APIError
 
 try:

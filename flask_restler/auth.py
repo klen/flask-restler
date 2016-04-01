@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 try:
     from flask_login import current_user
 except ImportError:

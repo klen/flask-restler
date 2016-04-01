@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 from flask import request, current_app, abort
 from flask._compat import with_metaclass
 from flask.json import dumps

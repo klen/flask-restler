@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 from flask import Blueprint, jsonify, request, render_template
 import os
 
