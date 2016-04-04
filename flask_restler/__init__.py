@@ -19,6 +19,7 @@ class APIError(Exception):
     def to_dict(self):
         rv = dict(self.payload or ())
         rv['error'] = self.message
+        rv['code'] = rv.get('code', self.status_code)
         return rv
 
 

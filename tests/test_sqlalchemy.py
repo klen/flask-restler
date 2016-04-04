@@ -57,6 +57,7 @@ def test_resource(app, api, client, sa_session):
         class Meta:
             model = User
             session = sa_session
+            filters = 'login', 'name'
             schema_exclude = 'password',
 
     response = client.get('/api/v1/user')
@@ -70,15 +71,29 @@ def test_resource(app, api, client, sa_session):
     assert response.json
 
     response = client.put_json('/api/v1/user/1', {
-        'name': 'David Bacon',
+        'name': 'Mike Summer',
     })
-    assert response.json['name'] == 'David Bacon'
+    assert response.json['name'] == 'Mike Summer'
+
+    response = client.post_json('/api/v1/user', {
+        'login': 'dave',
+        'name': 'Dave Macaroff',
+    })
 
     response = client.get('/api/v1/user')
-    assert response.json
+    assert len(response.json) == 2
+
+    response = client.get('/api/v1/user?sort=login,unknown')
+    assert response.json[0]['login'] == 'dave'
+
+    response = client.get('/api/v1/user?sort=-login')
+    assert response.json[0]['login'] == 'mike'
+
+    response = client.get('/api/v1/user?where={"login": "dave"}')
+    assert len(response.json) == 1
 
     response = client.delete('/api/v1/user/1')
     assert not response.json
 
     response = client.get('/api/v1/user')
-    assert not response.json
+    assert len(response.json) == 1

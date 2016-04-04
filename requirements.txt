@@ -1,2 +1,3 @@
 Flask                   == 0.10.1
 apispec                 == 0.9.0
+cached-property

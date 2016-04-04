@@ -7,10 +7,12 @@ from flask.views import View
 
 from . import APIError
 from .auth import current_user
+from .filters import Filters
 
 
 PER_PAGE_ARG = 'per_page'
 PAGE_ARG = 'page'
+SORT_ARG = 'sort'
 
 
 class ResourceOptions(object):
@@ -57,6 +59,9 @@ class ResourceOptions(object):
             if k.startswith('schema_') and not k == 'schema_meta'
         }
 
+        # Setup filters
+        self.filters = self.filters_converter(self.filters, cls)
+
     def __repr__(self):
         return "<Options %s>" % self.cls
 
@@ -96,6 +101,12 @@ class Resource(with_metaclass(ResourceMeta, View)):
         # url_detail: URL for resource detail, if it is None it will be calculated
         url = url_detail = None
 
+        # Resource filters
+        filters = ()
+
+        # Filters converter class
+        filters_converter = Filters
+
         specs = None
 
         # marshmallow.Schema.Meta options
@@ -120,15 +131,27 @@ class Resource(with_metaclass(ResourceMeta, View)):
             method = getattr(self, endpoint)
             return method(*args, **kwargs)
 
-        if self.meta.per_page and request.method == 'GET' and resource is None:
-            try:
-                per_page = int(request.args.get(PER_PAGE_ARG, self.meta.per_page))
-                if per_page:
-                    page = int(request.args.get(PAGE_ARG, 0))
-                    offset = page * per_page
-                    self.collection, total = self.paginate(offset, per_page)
-            except ValueError:
-                raise APIError('Pagination params are invalid.')
+        if request.method == 'GET' and resource is None:
+
+            # Filter resources
+            self.collection = self.filter(self.collection, *args, **kwargs)
+
+            # Sort resources
+            if SORT_ARG in request.args:
+                sorting = [(name.strip('-'), name.startswith('-'))
+                           for name in request.args[SORT_ARG].split(',')]
+                self.collection = self.sort(self.collection, *sorting, **kwargs)
+
+            # Paginate resources
+            if self.meta.per_page:
+                try:
+                    per_page = int(request.args.get(PER_PAGE_ARG, self.meta.per_page))
+                    if per_page:
+                        page = int(request.args.get(PAGE_ARG, 0))
+                        offset = page * per_page
+                        self.collection, total = self.paginate(offset, per_page)
+                except ValueError:
+                    raise APIError('Pagination params are invalid.')
 
         try:
             method = getattr(self, request.method.lower())
@@ -157,6 +180,12 @@ class Resource(with_metaclass(ResourceMeta, View)):
 
     def get_schema(self, resource=None, **kwargs):
         return self.Schema and self.Schema()
+
+    def filter(self, collection, *args, **kwargs):
+        return self.meta.filters.filter(collection, *args, **kwargs)
+
+    def sort(self, collection, *sorting, **kwargs):
+        return collection
 
     def load(self, data, resource=None, **kwargs):
         schema = self.get_schema(resource=resource, **kwargs)

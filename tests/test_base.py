@@ -39,8 +39,9 @@ def test_resource2(api, client):
 
         class Meta:
             name = 'two'
+            filters = 'val',
 
-        def get(self, **kwargs):
+        def get_many(self, **kwargs):
             return DATA
 
         def post(self, **kwargs):
@@ -70,6 +71,12 @@ def test_resource2(api, client):
 
     response = client.put_json('/api/v1/two/2', 22)
     assert response.json == [1, 22, 3]
+
+    response = client.get('/api/v1/two?where={"val": 22}')
+    assert response.json == [22]
+
+    response = client.get('/api/v1/two?where={"val": {"$ge": 3}}')
+    assert response.json == [22, 3]
 
     response = client.get('/api/v1/two/custom')
     assert response.data == b'SecondResource'

@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+from .filters import Filter as VanilaFilter, Filters
 from .resource import ResourceOptions, Resource, APIError
 
 
@@ -10,6 +11,23 @@ except ImportError:
     import logging
     logging.error('Marshmallow-SQLAlchemy should be installed to use the integration.')
     raise
+
+
+class Filter(VanilaFilter):
+
+    operators = VanilaFilter.operators
+
+    def filter(self, collection, data, resource=None):
+        ops = self.parse(data)
+        prop = getattr(resource.meta.model, self.name, None)
+        if not prop:
+            return collection
+        return collection.filter(*(op(prop, val) for op, val in ops))
+
+
+class ModelFilters(Filters):
+
+    FILTER_CLASS = Filter
 
 
 class ModelResourceOptions(ResourceOptions):
@@ -43,13 +61,27 @@ class ModelResource(Resource):
     OPTIONS_CLASS = ModelResourceOptions
 
     class Meta:
+        filters_converter = ModelFilters
         model = None
-        session = None
         primary_key = None
         schema = {}
+        session = None
 
     def get_many(self, *args, **kwargs):
         return self.meta.session.query(self.meta.model).filter()
+
+    def sort(self, collection, *sorting, **Kwargs):
+        sorting_ = []
+        for name, desc in sorting:
+            prop = getattr(self.meta.model, name, None)
+            if prop is None:
+                continue
+            if desc:
+                prop = prop.desc()
+            sorting_.append(prop)
+        if sorting_:
+            collection = collection.order_by(*sorting_)
+        return collection
 
     def get_one(self, *args, **kwargs):
         """Load a resource."""

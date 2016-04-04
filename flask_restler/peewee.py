@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 from .resource import ResourceOptions, Resource, APIError
+from .filters import Filter as VanilaFilter, Filters
 
 try:
     from marshmallow_peewee import ModelSchema
@@ -8,6 +9,22 @@ except ImportError:
     import logging
     logging.error('Marshmallow-Peewee should be installed to use the integration.')
     raise
+
+
+class Filter(VanilaFilter):
+
+    operators = VanilaFilter.operators
+    operators['$in'] = lambda v, c: v << c
+
+    def filter(self, collection, data, resource=None):
+        ops = self.parse(data)
+        mfield = resource.meta.model._meta.fields.get(self.field.attribute)
+        return collection.where(*(op(mfield, val) for op, val in ops))
+
+
+class ModelFilters(Filters):
+
+    FILTER_CLASS = Filter
 
 
 class ModelResourceOptions(ResourceOptions):
@@ -34,10 +51,25 @@ class ModelResource(Resource):
 
     class Meta:
         model = None
+        filters_converter = ModelFilters
         schema = {}
 
     def get_many(self, *args, **kwargs):
         return self.meta.model.select()
+
+    def sort(self, collection, *sorting, **Kwargs):
+        """Sort resources."""
+        sorting_ = []
+        for name, desc in sorting:
+            field = self.meta.model._meta.fields.get(name)
+            if field is None:
+                continue
+            if desc:
+                field = field.desc()
+            sorting_.append(field)
+        if sorting_:
+            collection = collection.order_by(*sorting_)
+        return collection
 
     def get_one(self, *args, **kwargs):
         """Load a resource."""
