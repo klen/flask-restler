@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 from flask import Blueprint, jsonify, request, render_template
+from flask._compat import string_types
 import os
 
 from . import APIError
@@ -98,8 +99,11 @@ class Api(Blueprint):
 
             return res
 
-        if resource is not None and issubclass(resource, Resource):
+        if resource is not None and isinstance(resource, type) and issubclass(resource, Resource):
             return wrapper(resource)
+
+        elif isinstance(resource, string_types):
+            url = resource
 
         return wrapper
 

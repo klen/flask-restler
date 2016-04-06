@@ -15,6 +15,12 @@ def test_resource(app, api, client):
         def get(self, resource=None, **kwargs):
             return 'Hello, %s!' % (resource and resource.title() or 'World')
 
+    @api.connect('/hello/<name>/how-are-you')
+    class HowAreYouResource(Resource):
+
+        def get(self, resource=None, name=None, **kwargs):
+            return 'Hello, %s! How are you?' % name.title()
+
     response = client.get('/api/v1/hello')
     assert response.json == 'Hello, World!'
 
@@ -23,6 +29,9 @@ def test_resource(app, api, client):
 
     response = client.post('/api/v1/hello')
     assert response.status_code == 405
+
+    response = client.get('/api/v1/hello/mike/how-are-you')
+    assert response.json == 'Hello, Mike! How are you?'
 
 
 def test_resource2(api, client):
