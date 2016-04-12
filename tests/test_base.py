@@ -78,6 +78,15 @@ def test_resource2(api, client):
     response = client.post_json('/api/v1/two', 3)
     assert response.json == [1, 2, 3]
 
+    response = client.get('/api/v1/two?per_page=2')
+    assert response.json == [1, 2]
+    assert response.headers['x-page'] == '0'
+    assert response.headers['x-page'] == '0'
+    assert response.headers['x-page-last'] == '1'
+
+    response = client.get('/api/v1/two?per_page=2&page=1')
+    assert response.json == [3]
+
     response = client.put_json('/api/v1/two/2', 22)
     assert response.json == [1, 22, 3]
 

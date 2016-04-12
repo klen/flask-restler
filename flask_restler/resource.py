@@ -5,6 +5,11 @@ from flask._compat import with_metaclass
 from flask.json import dumps
 from flask.views import View
 
+try:
+    from urllib.parse import urlencode
+except ImportError:
+    from urlparse import urlencode
+
 from . import APIError
 from .auth import current_user
 from .filters import Filters
@@ -131,6 +136,8 @@ class Resource(with_metaclass(ResourceMeta, View)):
             method = getattr(self, endpoint)
             return method(*args, **kwargs)
 
+        headers = {}
+
         if request.method == 'GET' and resource is None:
 
             # Filter resources
@@ -150,20 +157,24 @@ class Resource(with_metaclass(ResourceMeta, View)):
                         page = int(request.args.get(PAGE_ARG, 0))
                         offset = page * per_page
                         self.collection, total = self.paginate(offset, per_page)
+                        headers = make_pagination_headers(per_page, page, total)
                 except ValueError:
                     raise APIError('Pagination params are invalid.')
 
         try:
             method = getattr(self, request.method.lower())
             response = method(*args, **kwargs)
-            return self.to_json_response(response)
+            return self.to_json_response(response, headers=headers)
         except AttributeError:
             return abort(405)
 
-    def to_json_response(self, response):
+    def to_json_response(self, response, headers=None):
         """Serialize simple response to Flask response."""
-        return current_app.response_class(
+        response = current_app.response_class(
             dumps(response, indent=2), mimetype='application/json')
+        if headers:
+            response.headers.extend(headers)
+        return response
 
     def authorize(self, *args, **kwargs):
         """Default authorization method."""
@@ -235,3 +246,22 @@ class Resource(with_metaclass(ResourceMeta, View)):
         if resource is None:
             raise APIError('Resource not found', status_code=404)
         self.collection.remove(resource)
+
+
+def make_pagination_headers(limit, curpage, total):
+    """Return Link Hypermedia Header."""
+    lastpage = total // limit
+    headers = {'X-Total-Count': str(total), 'X-Limit': str(limit),
+               'X-Page-Last': str(lastpage), 'X-Page': str(curpage)}
+
+    base = "{}?%s".format(request.path)
+    links = {}
+    links['first'] = base % urlencode(dict(request.args, **{PAGE_ARG: 0}))
+    links['last'] = base % urlencode(dict(request.args, **{PAGE_ARG: lastpage}))
+    if curpage:
+        links['prev'] = base % urlencode(dict(request.args, **{PAGE_ARG: curpage - 1}))
+    if curpage < lastpage:
+        links['next'] = base % urlencode(dict(request.args, **{PAGE_ARG: curpage + 1}))
+
+    headers['Link'] = ",".join(['<%s>; rel="%s"' % (v, n) for n, v in links.items()])
+    return headers
