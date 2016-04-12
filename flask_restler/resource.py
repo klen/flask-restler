@@ -8,7 +8,7 @@ from flask.views import View
 try:
     from urllib.parse import urlencode
 except ImportError:
-    from urlparse import urlencode
+    from urllib import urlencode
 
 from . import APIError
 from .auth import current_user
