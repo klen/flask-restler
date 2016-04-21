@@ -252,7 +252,7 @@ class Resource(with_metaclass(ResourceMeta, View)):
 
 def make_pagination_headers(limit, curpage, total):
     """Return Link Hypermedia Header."""
-    lastpage = math.ceil(total / limit) - 1
+    lastpage = int(math.ceil(1.0 * total / limit) - 1)
     headers = {'X-Total-Count': str(total), 'X-Limit': str(limit),
                'X-Page-Last': str(lastpage), 'X-Page': str(curpage)}
 
