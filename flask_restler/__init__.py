@@ -1,6 +1,6 @@
 __license__ = "MIT"
 __project__ = "Flask-Restler"
-__version__ = "0.4.4"
+__version__ = "0.4.5"
 
 
 class APIError(Exception):
