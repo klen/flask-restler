@@ -81,7 +81,6 @@ def test_resource2(api, client):
     response = client.get('/api/v1/two?per_page=2')
     assert response.json == [1, 2]
     assert response.headers['x-page'] == '0'
-    assert response.headers['x-page'] == '0'
     assert response.headers['x-page-last'] == '1'
 
     response = client.get('/api/v1/two?per_page=2&page=1')
