@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+import math
+
 from flask import request, current_app, abort
 from flask._compat import with_metaclass
 from flask.json import dumps
@@ -250,7 +252,7 @@ class Resource(with_metaclass(ResourceMeta, View)):
 
 def make_pagination_headers(limit, curpage, total):
     """Return Link Hypermedia Header."""
-    lastpage = total // limit if total > limit else 0
+    lastpage = math.ceil(total / limit) - 1
     headers = {'X-Total-Count': str(total), 'X-Limit': str(limit),
                'X-Page-Last': str(lastpage), 'X-Page': str(curpage)}
 
