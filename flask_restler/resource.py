@@ -165,10 +165,11 @@ class Resource(with_metaclass(ResourceMeta, View)):
 
         try:
             method = getattr(self, request.method.lower())
-            response = method(*args, **kwargs)
-            return self.to_json_response(response, headers=headers)
         except AttributeError:
             return abort(405)
+
+        response = method(*args, **kwargs)
+        return self.to_json_response(response, headers=headers)
 
     def to_json_response(self, response, headers=None):
         """Serialize simple response to Flask response."""
