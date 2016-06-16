@@ -49,7 +49,7 @@ class MongoOptions(ResourceOptions):
         if not self.collection:
             return
 
-        self.name = self.name or self.collection.name
+        self.name = self.name or str(self.collection.name)
 
         if not cls.Schema:
             meta = type('Meta', (object,), self.schema_meta)
