@@ -19,7 +19,7 @@ The Flask RESTler
 
 The Flask RESTler -- Build REST API for Flask_ using Marshmallow_.
 
-Has builded support for SQLAlchemy_ and Peewee_ ORM.
+Has builded support for SQLAlchemy_, Peewee_ ORM and Pymongo_.
 
 Example "Hello User" with the Flask-resler:
 
@@ -121,3 +121,4 @@ send a postcard to: ::
 .. _Marshmallow: https://marshmallow.readthedocs.org/en/latest/
 .. _Peewee: http://docs.peewee-orm.com/en/latest/
 .. _SQLAlchemy: http://www.sqlalchemy.org/
+.. _Pymongo: https://api.mongodb.com/python/current/

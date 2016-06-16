@@ -31,14 +31,14 @@ class Filter(object):
     def parse(self, data):
         val = data.get(self.fname, missing)
         if not isinstance(val, dict):
-            return (operator.eq, self.field.deserialize(val)),
+            return (self.operators['$eq'], self.field.deserialize(val)),
 
         return tuple(
             (self.operators[op], self.field.deserialize(val))
             for (op, val) in val.items() if op in self.operators
         )
 
-    def filter(self, collection, data, resource=None):
+    def filter(self, collection, data, resource=None, **kwargs):
         ops = self.parse(data)
         validator = lambda obj: all(op(obj, val) for (op, val) in ops)  # noqa
         return [o for o in collection if validator(o)]
@@ -77,5 +77,5 @@ class Filters(object):
         for f in self.filters:
             if f.fname not in data:
                 continue
-            collection = f.filter(collection, data, resource=self.Resource)
+            collection = f.filter(collection, data, resource=self.Resource, **kwargs)
         return collection
