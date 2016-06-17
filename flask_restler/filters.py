@@ -59,9 +59,9 @@ class Filters(object):
         return list(f if isinstance(f, Filter) else self.convert(f) for f in self._filters)
 
     def convert(self, name):
-        if not self.Resource.Schema:
+        if not self.Resource.Schema or name not in self.Resource.Schema._declared_fields:
             return self.FILTER_CLASS(name)
-        field = self.Resource.Schema._declared_fields.get(name)
+        field = self.Resource.Schema._declared_fields[name]
         return self.FILTER_CLASS(name, field=field)
 
     def filter(self, collection, *args, **kwargs):
