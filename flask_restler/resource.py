@@ -212,9 +212,9 @@ class Resource(with_metaclass(ResourceMeta, View)):
         """Create a resource."""
         return resource
 
-    def to_simple(self, data, many=False):
+    def to_simple(self, data, many=False, **kwargs):
         """Serialize response to simple object (list, dict)."""
-        schema = self.get_schema()
+        schema = self.get_schema(**kwargs)
         return schema.dump(data, many=many).data if schema else data
 
     def paginate(self, offset, limit):
@@ -224,16 +224,16 @@ class Resource(with_metaclass(ResourceMeta, View)):
     def get(self, resource=None, **kwargs):
         """Get resource or collection of resources."""
         if resource is not None and resource != '':
-            return self.to_simple(resource)
+            return self.to_simple(resource, **kwargs)
 
-        return self.to_simple(self.collection, many=True)
+        return self.to_simple(self.collection, many=True, **kwargs)
 
     def post(self, **kwargs):
         """Create a resource."""
         data = request.json or {}
         resource = self.load(data, **kwargs)
         resource = self.save(resource)
-        return self.to_simple(resource)
+        return self.to_simple(resource, **kwargs)
 
     def put(self, resource=None, **kwargs):
         """Update a resource."""
