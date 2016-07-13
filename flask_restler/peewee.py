@@ -15,6 +15,15 @@ class Filter(VanilaFilter):
 
     operators = VanilaFilter.operators
     operators['$in'] = lambda v, c: v << c
+    operators['$none'] = lambda f, v: f >> v
+    operators['$like'] = lambda f, v: f % v
+    operators['$contains'] = lambda f, v: f.contains(v)
+    operators['$starts'] = lambda f, v: f.startswith(v)
+    operators['$ends'] = lambda f, v: f.endswith(v)
+    operators['$between'] = lambda f, v: f.between(*v)
+    operators['$regexp'] = lambda f, v: f.regexp(v)
+
+    list_ops = VanilaFilter.list_ops + ('$between',)
 
     def filter(self, collection, data, resource=None, **kwargs):
         ops = self.parse(data)
