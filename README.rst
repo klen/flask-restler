@@ -39,7 +39,7 @@ Example "Hello User" with the Flask-resler:
             return 'Hello World!'
 
 
-    # Regiater with your application
+    # Register with your application
     from your_project import app
 
     app.register_blueprint(api)
