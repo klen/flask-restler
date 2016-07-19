@@ -85,9 +85,9 @@ class Filters(object):
         except (ValueError, TypeError):
             return collection
 
+        request.filters = {}
         for f in self.filters:
             if f.fname not in data:
                 continue
-            request.filters = {}
             collection = f.filter(collection, data, resource=self.Resource, **kwargs)
         return collection
