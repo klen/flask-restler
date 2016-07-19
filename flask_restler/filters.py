@@ -34,15 +34,20 @@ class Filter(object):
         """Parse operator and value from filter's data."""
         val = data.get(self.fname, missing)
         if not isinstance(val, dict):
-            return (self.operators['$eq'], self.field.deserialize(val)),
+            val = self.field.deserialize(val)
+            request.filters[self.fname] = val
+            return (self.operators['$eq'], val),
 
-        return tuple(
-            (
-                self.operators[op],
-                (self.field.deserialize(val)) if op not in self.list_ops else [
-                    self.field.deserialize(v) for v in val])
-            for (op, val) in val.items() if op in self.operators
-        )
+        ops = ()
+        request.filters[self.fname] = {}
+        for op, val in val.items():
+            if op not in self.operators:
+                continue
+            val = self.field.deserialize(val) if op not in self.list_ops else [self.field.deserialize(v) for v in val]  # noqa
+            ops += (self.operators[op], val),
+            request.filters[self.fname][op] = val
+
+        return ops
 
     def filter(self, collection, data, resource=None, **kwargs):
         ops = self.parse(data)
@@ -83,5 +88,6 @@ class Filters(object):
         for f in self.filters:
             if f.fname not in data:
                 continue
+            request.filters = {}
             collection = f.filter(collection, data, resource=self.Resource, **kwargs)
         return collection
