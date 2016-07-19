@@ -3,7 +3,7 @@ import operator
 
 from cached_property import cached_property
 from flask import request
-from marshmallow import fields, missing
+from marshmallow import fields, missing, ValidationError
 
 
 class Filter(object):
@@ -49,9 +49,17 @@ class Filter(object):
 
         return ops
 
-    def filter(self, collection, data, resource=None, **kwargs):
-        ops = self.parse(data)
-        validator = lambda obj: all(op(obj, val) for (op, val) in ops)  # noqa
+    def filter(self, collection, data, **kwargs):
+        """Parse data and apply filter."""
+        try:
+            return self.apply(collection, self.parse(data), **kwargs)
+        except ValidationError:
+            return collection
+
+    def apply(self, collection, ops, **kwargs):
+        """Apply current filter."""
+        def validator(obj):
+            return all(op(obj, val) for (op, val) in ops)
         return [o for o in collection if validator(o)]
 
 

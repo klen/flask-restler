@@ -25,8 +25,10 @@ class Filter(VanilaFilter):
 
     list_ops = VanilaFilter.list_ops + ('$between',)
 
-    def filter(self, collection, data, resource=None, **kwargs):
-        ops = self.parse(data)
+    def apply(self, collection, ops, resource=None, **kwargs):
+        """Filter given Peewee collection."""
+        if resource is None:
+            return collection
         mfield = resource.meta.model._meta.fields.get(self.field.attribute)
         return collection.where(*(op(mfield, val) for op, val in ops))
 
