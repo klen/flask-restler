@@ -70,9 +70,8 @@ class Filter(VanilaFilter):
         '$nin': '$nin',
     }
 
-    def filter(self, collection, data, resource=None, **kwargs):
+    def apply(self, collection, ops, **kwargs):
         """Filter mongo."""
-        ops = self.parse(data)
         return collection.find({self.name: dict(ops)})
 
 
