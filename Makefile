@@ -24,6 +24,7 @@ clean:
 VERSION?=minor
 # target: release - Bump version
 release:
+	@git up
 	@$(VIRTUAL_ENV)/bin/pip install bumpversion
 	@$(VIRTUAL_ENV)/bin/bumpversion $(VERSION)
 	@git checkout master
