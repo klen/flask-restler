@@ -15,6 +15,7 @@ class Filter(VanilaFilter):
 
     operators = VanilaFilter.operators
     operators['$in'] = lambda v, c: v << c
+    operators['$nin'] = lambda v, c: ~(v << c)
     operators['$none'] = lambda f, v: f >> v
     operators['$like'] = lambda f, v: f % v
     operators['$contains'] = lambda f, v: f.contains(v)
@@ -23,7 +24,7 @@ class Filter(VanilaFilter):
     operators['$between'] = lambda f, v: f.between(*v)
     operators['$regexp'] = lambda f, v: f.regexp(v)
 
-    list_ops = VanilaFilter.list_ops + ('$between',)
+    list_ops = VanilaFilter.list_ops + ('$between', '$nin')
 
     def apply(self, collection, ops, resource=None, **kwargs):
         """Filter given Peewee collection."""
