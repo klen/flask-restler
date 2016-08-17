@@ -31,7 +31,7 @@ class Filter(VanilaFilter):
         if resource is None:
             return collection
         mfield = resource.meta.model._meta.fields.get(self.field.attribute)
-        return collection.where(*(op(mfield, val) for op, val in ops))
+        return collection.where(*[op(mfield, val) for op, val in ops])
 
 
 class ModelFilters(Filters):

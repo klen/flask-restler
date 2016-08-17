@@ -3,6 +3,7 @@
 
 marshmallow-sqlalchemy  >= 0.8.0
 marshmallow-peewee      >= 1.0.4
+peewee                  >= 2.8.2
 mongomock
 pymongo
 
