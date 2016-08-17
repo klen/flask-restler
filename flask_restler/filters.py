@@ -22,10 +22,10 @@ class Filter(object):
 
     list_ops = '$in',
 
-    def __init__(self, name, fname=None, field=fields.Raw()):
-        self.field = field
-        self.fname = fname or name
+    def __init__(self, name, fname=None, field=None):
         self.name = name
+        self.fname = fname or name
+        self.field = field or fields.Raw(attribute=name)
 
     def __repr__(self):
         return '<Filter %s>' % self.field.attribute
