@@ -83,7 +83,7 @@ class Filters(object):
         field = self.Resource.Schema._declared_fields[name]
         return self.FILTER_CLASS(name, field=field)
 
-    def filter(self, collection, *args, **kwargs):
+    def filter(self, collection, resource, *args, **kwargs):
         data = request.args.get('where')
         if not data or self.filters is None:
             return collection
@@ -97,5 +97,5 @@ class Filters(object):
         for f in self.filters:
             if f.fname not in data:
                 continue
-            collection = f.filter(collection, data, resource=self.Resource, **kwargs)
+            collection = f.filter(collection, data, resource=resource, **kwargs)
         return collection

@@ -196,7 +196,7 @@ class Resource(with_metaclass(ResourceMeta, View)):
         return self.Schema and self.Schema()
 
     def filter(self, collection, *args, **kwargs):
-        return self.meta.filters.filter(collection, *args, **kwargs)
+        return self.meta.filters.filter(collection, self, *args, **kwargs)
 
     def sort(self, collection, *sorting, **kwargs):
         return collection
