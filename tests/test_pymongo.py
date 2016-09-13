@@ -67,5 +67,23 @@ def test_resource(app, api, client):
     response = client.delete('/api/v1/user/%s' % _id)
     assert not response.json
 
+    response = client.post_json('/api/v1/user', {
+        'login': 'dave',
+        'name': 'Dave Macaroff',
+    })
+    assert response.json
+
     response = client.get('/api/v1/_specs')
     assert response.json
+
+    @api.connect('/users', '/users/{user}', endpoint='api-users')
+    class UserGroupResouce(MongoResource):
+
+        methods = 'get',
+
+        class Meta:
+            collection = DB.user
+            group = [{'$group': {'_id': '$login'}}]
+
+    response = client.get('/api/v1/users')
+    assert response.status_code == 200
