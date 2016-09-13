@@ -83,7 +83,7 @@ def test_resource(app, api, client):
 
         class Meta:
             collection = DB.user
-            group = [{'$group': {'_id': '$login'}}]
+            aggregate = [{'$group': {'_id': '$login'}}]
 
     response = client.get('/api/v1/users')
     assert response.status_code == 200

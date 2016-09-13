@@ -153,7 +153,7 @@ class MongoResource(Resource):
         collection = None
         filters = 'login',
         filters_converter = MongoFilters
-        group = False  # Support aggregation. Set to pipeline.
+        aggregate = False  # Support aggregation. Set to pipeline.
         object_id = '_id'
         schema = {}
 
@@ -171,15 +171,15 @@ class MongoResource(Resource):
 
     def paginate(self, offset=0, limit=None):
         """Paginate collection."""
-        if self.meta.group:
-            pipeline = self.meta.group + [{'$limit': limit}, {'$skip': offset}]
+        if self.meta.aggregate:
+            pipeline = self.meta.aggregate + [{'$limit': limit}, {'$skip': offset}]
             return self.collection.aggregate(pipeline), self.collection.count()
         return self.collection.skip(offset).limit(limit), self.collection.count()
 
     def to_simple(self, data, many=False, **kwargs):
         """Support aggregation."""
-        if isinstance(data, MongoChain) and self.meta.group:
-            data = data.aggregate(self.meta.group)
+        if isinstance(data, MongoChain) and self.meta.aggregate:
+            data = data.aggregate(self.meta.aggregate)
         return super(MongoResource, self).to_simple(data, many=many, **kwargs)
 
     def get_schema(self, resource=None, **kwargs):
