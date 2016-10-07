@@ -126,7 +126,12 @@ class Api(Blueprint):
         for resource in self.resources:
 
             if resource.Schema:
-                specs['definitions'][resource.meta.name] = schema2jsonschema(resource.Schema)
+                jsonschema = schema2jsonschema(resource.Schema)
+                for prop in jsonschema.get('properties', {}).values():
+                    if prop.get('type') == 'string' and prop.get('default'):
+                        prop['default'] = str(prop['default'])
+
+                specs['definitions'][resource.meta.name] = jsonschema
 
             specs['tags'].append({
                 'name': resource.meta.name,
@@ -142,7 +147,7 @@ class Api(Blueprint):
 
             for endpoint, (url_, name_, params_) in resource.meta.endpoints.values():
                 specs['paths'][
-                    "%s%s" % (resource.meta.url, url_flask_to_swagger(url_))] = path = {}
+                    "%s/%s" % (resource.meta.url.rstrip('/'), url_flask_to_swagger(url_))] = path = {}
                 path['get'] = dict(
                     summary=endpoint.__doc__, description=endpoint.__doc__, **defaults)
                 if hasattr(endpoint, 'specs'):
