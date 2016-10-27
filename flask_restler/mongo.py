@@ -172,8 +172,13 @@ class MongoResource(Resource):
     def paginate(self, offset=0, limit=None):
         """Paginate collection."""
         if self.meta.aggregate:
-            pipeline = self.meta.aggregate + [{'$limit': limit}, {'$skip': offset}]
-            return self.collection.aggregate(pipeline), self.collection.count()
+            pipeline_all = self.meta.aggregate + [{'$limit': limit}, {'$skip': offset}]
+            pipeline_num = self.meta.aggregate + [{'$group': {'_id': None, 'total': {'$sum': 1}}}]
+            counts = list(self.collection.aggregate(pipeline_num))
+            return (
+                self.collection.aggregate(pipeline_all),
+                counts and counts[0]['total'] or 0
+            )
         return self.collection.skip(offset).limit(limit), self.collection.count()
 
     def to_simple(self, data, many=False, **kwargs):
