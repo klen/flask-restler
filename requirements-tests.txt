@@ -4,7 +4,7 @@
 marshmallow-sqlalchemy  >= 0.8.0
 marshmallow-peewee      >= 1.0.4
 peewee                  >= 2.8.2
-mongomock
+mongomock==3.7.0
 pymongo==3.3.0
 
 ipdb==0.10.1
