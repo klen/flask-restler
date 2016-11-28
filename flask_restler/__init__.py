@@ -3,7 +3,7 @@ import logging
 
 __license__ = "MIT"
 __project__ = "Flask-Restler"
-__version__ = "1.4.4"
+__version__ = "1.4.5"
 
 
 logger = logging.getLogger('flask-restler')
