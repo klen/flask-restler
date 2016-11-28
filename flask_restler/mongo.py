@@ -207,9 +207,9 @@ class MongoResource(Resource):
         """Sort resources."""
         sorting = {name: -1 if desc else 1 for name, desc in sorting}
         if self.meta.aggregate:
-            pipeline = [p for p in self.meta.aggregate if '$sort' not in p]
-            pipeline.append({'$sort': sorting})
-            return self.collection.aggregate(pipeline)
+            self.meta.aggregate = [p for p in self.meta.aggregate if '$sort' not in p]
+            self.meta.aggregate.append({'$sort': sorting})
+            return self.collection
 
         return collection.sort(list(sorting.items()))
 
