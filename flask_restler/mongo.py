@@ -176,7 +176,7 @@ class MongoResource(Resource):
     def paginate(self, offset=0, limit=None):
         """Paginate collection."""
         if self.meta.aggregate:
-            pipeline_all = self.meta.aggregate + [{'$limit': limit}, {'$skip': offset}]
+            pipeline_all = self.meta.aggregate + [{'$skip': offset}, {'$limit': limit}]
             pipeline_num = self.meta.aggregate + [{'$group': {'_id': None, 'total': {'$sum': 1}}}]
             counts = list(self.collection.aggregate(pipeline_num))
             return (
@@ -206,6 +206,11 @@ class MongoResource(Resource):
     def sort(self, collection, *sorting, **Kwargs):
         """Sort resources."""
         sorting = {name: -1 if desc else 1 for name, desc in sorting}
+        if self.meta.aggregate:
+            pipeline = [p for p in self.meta.aggregate if '$sort' not in p]
+            pipeline.append({'$sort': sorting})
+            return self.collection.aggregate(pipeline)
+
         return collection.sort(list(sorting.items()))
 
     def delete(self, resource=None, **kwargs):
