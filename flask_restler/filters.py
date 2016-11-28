@@ -4,6 +4,7 @@ import operator
 from cached_property import cached_property
 from flask import request
 from marshmallow import fields, missing, ValidationError
+from . import logger
 
 
 class Filter(object):
@@ -28,7 +29,7 @@ class Filter(object):
         self.field = field or fields.Raw(attribute=name)
 
     def __repr__(self):
-        return '<Filter %s>' % self.field.attribute
+        return '<Filter %s>' % (self.field.attribute or self.name or self.fname)
 
     def parse(self, data):
         """Parse operator and value from filter's data."""
@@ -94,8 +95,8 @@ class Filters(object):
             return collection
 
         request.filters = {}
-        for f in self.filters:
-            if f.fname not in data:
-                continue
+        filters = [f for f in self.filters if f.fname in data]
+        logger.debug('Filters active: %r', filters)
+        for f in filters:
             collection = f.filter(collection, data, resource=resource, **kwargs)
         return collection

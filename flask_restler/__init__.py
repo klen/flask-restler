@@ -1,6 +1,13 @@
+import logging
+
+
 __license__ = "MIT"
 __project__ = "Flask-Restler"
 __version__ = "1.4.3"
+
+
+logger = logging.getLogger('flask-restler')
+logger.addHandler(logging.NullHandler())
 
 
 class APIError(Exception):
@@ -36,6 +43,5 @@ def route(rule=None, endpoint=None, **options):
         return decorator(f)
 
     return decorator
-
 
 from .api import Api, Resource  # noqa

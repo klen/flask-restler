@@ -1,6 +1,14 @@
+import json
+import logging
+
 import pytest
 from flask.testing import FlaskClient
-import json
+
+from flask_restler import Api, logger
+
+
+logger.setLevel('DEBUG')
+logger.addHandler(logging.StreamHandler())
 
 
 class TestClient(FlaskClient):
@@ -52,8 +60,6 @@ def app():
 
 @pytest.fixture(scope='function')
 def api(app):
-    from flask_restler import Api
-
     api = Api('REST API', __name__, url_prefix="/api/v1")
     api.register(app)
     return api

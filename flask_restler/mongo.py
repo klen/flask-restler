@@ -2,7 +2,7 @@ import bson
 import marshmallow as ma
 
 from .filters import Filter as VanilaFilter, Filters
-from .resource import ResourceOptions, Resource, APIError
+from .resource import ResourceOptions, Resource, APIError, logger
 
 
 class ObjectId(ma.fields.Field):
@@ -72,6 +72,7 @@ class Filter(VanilaFilter):
 
     def apply(self, collection, ops, **kwargs):
         """Filter mongo."""
+        logger.debug('Apply filter %s (%r)', self.name, ops)
         return collection.find({self.name: dict(ops)})
 
 
@@ -114,8 +115,9 @@ class MongoChain(object):
         return self
 
     def find_one(self, query=None, projection=None):
-        self.__update__(query)
-        return self.collection.find_one(self.__update__(query), projection=projection)
+        query = self.__update__(query)
+        logger.debug('Mongo find one: %r', query)
+        return self.collection.find_one(query, projection=projection)
 
     def aggregate(self, pipeline, **kwargs):
         if self.query:
@@ -125,6 +127,7 @@ class MongoChain(object):
                     break
             else:
                 pipeline.insert(0, {'$match': self.query})
+            logger.debug('Mongo aggregate: %r', pipeline)
         return self.collection.aggregate(pipeline, **kwargs)
 
     def __repr__(self):
@@ -137,6 +140,7 @@ class MongoChain(object):
 
     def __getattr__(self, name):
         """Proxy any attributes except find to self.collection."""
+        logger.debug('Mongo load: %r', self.query)
         if name in self.CURSOR_METHODS:
             cursor = self.collection.find(self.query, self.projection)
             return getattr(cursor, name)

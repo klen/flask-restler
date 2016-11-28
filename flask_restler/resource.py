@@ -12,7 +12,7 @@ try:
 except ImportError:
     from urllib import urlencode
 
-from . import APIError
+from . import APIError, logger
 from .auth import current_user
 from .filters import Filters
 
@@ -136,6 +136,7 @@ class Resource(with_metaclass(ResourceMeta, View)):
         endpoint = kwargs.pop('endpoint', None)
         if endpoint and hasattr(self, endpoint):
             method = getattr(self, endpoint)
+            logger.debug('Loaded endpoint: %s', endpoint)
             return method(*args, **kwargs)
 
         headers = {}
@@ -196,9 +197,11 @@ class Resource(with_metaclass(ResourceMeta, View)):
         return self.Schema and self.Schema()
 
     def filter(self, collection, *args, **kwargs):
+        logger.debug('Filter collection: %r', collection)
         return self.meta.filters.filter(collection, self, *args, **kwargs)
 
     def sort(self, collection, *sorting, **kwargs):
+        logger.debug('Sort collection: %r', sorting)
         return collection
 
     def load(self, data, resource=None, **kwargs):
@@ -219,10 +222,12 @@ class Resource(with_metaclass(ResourceMeta, View)):
 
     def paginate(self, offset, limit):
         """Paginate results."""
+        logger.debug('Paginate collection, offset: %d, limit: %d', offset, limit)
         return self.collection[offset: offset + limit], len(self.collection)
 
     def get(self, resource=None, **kwargs):
         """Get resource or collection of resources."""
+        logger.debug('Get resources (%r)', resource)
         if resource is not None and resource != '':
             return self.to_simple(resource, **kwargs)
 
@@ -233,10 +238,12 @@ class Resource(with_metaclass(ResourceMeta, View)):
         data = request.json or {}
         resource = self.load(data, **kwargs)
         resource = self.save(resource)
+        logger.debug('Create a resource (%r)', kwargs)
         return self.to_simple(resource, **kwargs)
 
     def put(self, resource=None, **kwargs):
         """Update a resource."""
+        logger.debug('Update a resource (%r)', resource)
         if resource is None:
             raise APIError('Resource not found', status_code=404)
 
@@ -246,6 +253,7 @@ class Resource(with_metaclass(ResourceMeta, View)):
 
     def delete(self, resource=None, **kwargs):
         """Delete a resource."""
+        logger.debug('Delete a resource (%r)', resource)
         if resource is None:
             raise APIError('Resource not found', status_code=404)
         self.collection.remove(resource)
