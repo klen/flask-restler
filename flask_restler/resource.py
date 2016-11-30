@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import math
+import logging
 
 from flask import request, current_app, abort
 from flask._compat import with_metaclass
@@ -164,6 +165,10 @@ class Resource(with_metaclass(ResourceMeta, View)):
                 except ValueError:
                     raise APIError('Pagination params are invalid.')
 
+        if logger.level <= logging.DEBUG:
+            logger.debug('Collection: %r', self.collection)
+            logger.debug('Params: %r', kwargs)
+
         try:
             method = getattr(self, request.method.lower())
         except AttributeError:
@@ -197,7 +202,6 @@ class Resource(with_metaclass(ResourceMeta, View)):
         return self.Schema and self.Schema()
 
     def filter(self, collection, *args, **kwargs):
-        logger.debug('Filter collection: %r', collection)
         return self.meta.filters.filter(collection, self, *args, **kwargs)
 
     def sort(self, collection, *sorting, **kwargs):

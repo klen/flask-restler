@@ -94,6 +94,8 @@ class Filters(object):
         except (ValueError, TypeError):
             return collection
 
+        logger.debug('Filter resources: %r', data)
+
         request.filters = {}
         filters = [f for f in self.filters if f.fname in data]
         logger.debug('Filters active: %r', filters)

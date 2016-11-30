@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-from .resource import ResourceOptions, Resource, APIError
+from .resource import ResourceOptions, Resource, APIError, logger
 from .filters import Filter as VanilaFilter, Filters
 
 try:
@@ -30,6 +30,7 @@ class Filter(VanilaFilter):
         """Filter given Peewee collection."""
         if resource is None:
             return collection
+        logger.debug('Apply filter %s (%r)', self.name, ops)
         mfield = resource.meta.model._meta.fields.get(self.field.attribute)
         return collection.where(*[op(mfield, val) for op, val in ops])
 
@@ -71,6 +72,7 @@ class ModelResource(Resource):
 
     def sort(self, collection, *sorting, **Kwargs):
         """Sort resources."""
+        logger.debug('Sort collection: %r', sorting)
         sorting_ = []
         for name, desc in sorting:
             field = self.meta.model._meta.fields.get(name)
@@ -112,4 +114,5 @@ class ModelResource(Resource):
 
     def paginate(self, offset=0, limit=None):
         """Paginate queryset."""
+        logger.debug('Paginate collection, offset: %d, limit: %d', offset, limit)
         return self.collection.offset(offset).limit(limit), self.collection.count()
