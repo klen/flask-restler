@@ -176,12 +176,12 @@ class Resource(with_metaclass(ResourceMeta, View)):
             return abort(405)
 
         response = method(*args, **kwargs)
-        if self.raw:
-            return response
         return self.to_json_response(response, headers=headers)
 
     def to_json_response(self, response, headers=None):
         """Serialize simple response to Flask response."""
+        if self.raw:
+            return response
         response = current_app.response_class(
             dumps(response, indent=2), mimetype='application/json')
         if headers:
