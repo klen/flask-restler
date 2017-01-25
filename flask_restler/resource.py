@@ -123,8 +123,9 @@ class Resource(with_metaclass(ResourceMeta, View)):
         # Redefine Schema.Meta completely
         schema_meta = None
 
-    def __init__(self, api=None, **kwargs):
+    def __init__(self, api=None, raw=False, **kwargs):
         self.api = api
+        self.raw = raw
         return super(Resource, self).__init__(**kwargs)
 
     def dispatch_request(self, *args, **kwargs):
@@ -175,6 +176,8 @@ class Resource(with_metaclass(ResourceMeta, View)):
             return abort(405)
 
         response = method(*args, **kwargs)
+        if self.raw:
+            return response
         return self.to_json_response(response, headers=headers)
 
     def to_json_response(self, response, headers=None):
