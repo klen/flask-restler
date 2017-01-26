@@ -1,3 +1,4 @@
+"""Support Peewee ORM."""
 from __future__ import absolute_import
 
 from .resource import ResourceOptions, Resource, APIError, logger
@@ -13,11 +14,14 @@ except ImportError:
 
 class Filter(VanilaFilter):
 
+    """Filter Peewee Collection."""
+
     operators = VanilaFilter.operators
     operators['$in'] = lambda v, c: v << c
     operators['$nin'] = lambda v, c: ~(v << c)
     operators['$none'] = lambda f, v: f >> v
     operators['$like'] = lambda f, v: f % v
+    operators['$ilike'] = lambda f, v: f ** v
     operators['$contains'] = lambda f, v: f.contains(v)
     operators['$starts'] = lambda f, v: f.startswith(v)
     operators['$ends'] = lambda f, v: f.endswith(v)
@@ -37,12 +41,17 @@ class Filter(VanilaFilter):
 
 class ModelFilters(Filters):
 
+    """Filter Peewee Collection."""
+
     FILTER_CLASS = Filter
 
 
 class ModelResourceOptions(ResourceOptions):
 
+    """Peewee Resource Options."""
+
     def __init__(self, cls):
+        """Get meta from given model."""
         super(ModelResourceOptions, self).__init__(cls)
         self.name = (self.meta and getattr(self.meta, 'name', None)) or \
             self.model and self.model._meta.db_table or self.name
@@ -63,11 +72,15 @@ class ModelResource(Resource):
     OPTIONS_CLASS = ModelResourceOptions
 
     class Meta:
+
+        """Default options."""
+
         model = None
         filters_converter = ModelFilters
         schema = {}
 
     def get_many(self, *args, **kwargs):
+        """Setup queryset."""
         return self.meta.model.select()
 
     def sort(self, collection, *sorting, **Kwargs):
@@ -99,6 +112,7 @@ class ModelResource(Resource):
         return resource
 
     def get_schema(self, resource=None, **kwargs):
+        """Put resource to schema."""
         return self.Schema(instance=resource)
 
     def save(self, resource):
@@ -116,3 +130,5 @@ class ModelResource(Resource):
         """Paginate queryset."""
         logger.debug('Paginate collection, offset: %d, limit: %d', offset, limit)
         return self.collection.offset(offset).limit(limit), self.collection.count()
+
+# pylama:ignore=E1102,W0212
