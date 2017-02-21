@@ -1,5 +1,6 @@
 """Support Peewee ORM."""
 from __future__ import absolute_import
+from peewee import SQL
 
 from .resource import ResourceOptions, Resource, APIError, logger
 from .filters import Filter as VanilaFilter, Filters
@@ -30,12 +31,18 @@ class Filter(VanilaFilter):
 
     list_ops = VanilaFilter.list_ops + ('$between', '$nin')
 
+    mfield = None
+
+    def __init__(self, name, fname=None, field=None, mfield=None):
+        super(Filter, self).__init__(name, fname, field)
+        self.mfield = mfield or self.mfield
+
     def apply(self, collection, ops, resource=None, **kwargs):
         """Filter given Peewee collection."""
-        if resource is None:
+        if not self.mfield and resource is None:
             return collection
         logger.debug('Apply filter %s (%r)', self.name, ops)
-        mfield = resource.meta.model._meta.fields.get(self.field.attribute)
+        mfield = self.mfield or resource.meta.model._meta.fields.get(self.field.attribute)
         return collection.where(*[op(mfield, val) for op, val in ops])
 
 
@@ -88,9 +95,7 @@ class ModelResource(Resource):
         logger.debug('Sort collection: %r', sorting)
         sorting_ = []
         for name, desc in sorting:
-            field = self.meta.model._meta.fields.get(name)
-            if field is None:
-                continue
+            field = self.meta.model._meta.fields.get(name) or SQL(name)
             if desc:
                 field = field.desc()
             sorting_.append(field)
