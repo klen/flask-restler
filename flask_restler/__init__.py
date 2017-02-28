@@ -34,7 +34,7 @@ def route(rule=None, endpoint=None, **options):
     """Custom routes in resources."""
 
     def decorator(f):
-        endpoint_ = f.__name__.lower()
+        endpoint_ = endpoint or f.__name__.lower()
         f.route = (rule, endpoint_, options)
         return f
 
