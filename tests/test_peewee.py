@@ -66,7 +66,7 @@ def test_resource(app, api, client):
     response = client.get('/api/v1/user')
     assert len(response.json) == 2
 
-    response = client.get('/api/v1/user?sort=login,unknown')
+    response = client.get('/api/v1/user?sort=login')
     assert response.json[0]['login'] == 'dave'
 
     response = client.get('/api/v1/user?sort=-login')

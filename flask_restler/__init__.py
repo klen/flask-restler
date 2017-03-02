@@ -3,7 +3,7 @@ import logging
 
 __license__ = "MIT"
 __project__ = "Flask-Restler"
-__version__ = "1.4.7"
+__version__ = "1.6.3"
 
 
 logger = logging.getLogger('flask-restler')
@@ -34,7 +34,7 @@ def route(rule=None, endpoint=None, **options):
     """Custom routes in resources."""
 
     def decorator(f):
-        endpoint_ = f.__name__.lower()
+        endpoint_ = endpoint or f.__name__.lower()
         f.route = (rule, endpoint_, options)
         return f
 

@@ -1,14 +1,20 @@
 from __future__ import absolute_import
 
-from flask import Blueprint, jsonify, request, render_template
-from flask._compat import string_types
+from flask import Blueprint, jsonify, request, render_template, json
+from flask._compat import string_types, PY2
 import os
+import urllib
 
 from . import APIError
 from .auth import current_user
 
 from .resource import Resource
 from apispec.ext.marshmallow.swagger import schema2jsonschema
+
+if PY2:
+    urlencode = urllib.urlencode
+else:
+    urlencode = urllib.parse.urlencode
 
 
 DEFAULT = object()
@@ -29,8 +35,6 @@ class Api(Blueprint):
 
         if self.specs:
             kwargs['static_folder'] = STATIC
-            kwargs['static_url_path'] = '/static'
-            kwargs['template_folder'] = TEMPLATE
 
         super(Api, self).__init__(name, import_name, url_prefix=url_prefix, **kwargs)
         self.app = None
@@ -44,7 +48,7 @@ class Api(Blueprint):
             self.route('/_specs')(self.specs_view)
 
             @self.route('/')
-            def specs_html():
+            def specs_html(): # noqa
                 return render_template('swagger.html')
 
         return super(Api, self).register(app, options or {}, first_registration)
@@ -106,6 +110,28 @@ class Api(Blueprint):
             url = resource
 
         return wrapper
+
+    def run(self, Resource, path=None, query_string=None, kwargs=None, **rkwargs):
+        """Run given resource manually.
+
+        See werkzeug.test.EnvironBuilder for rkwargs.
+        """
+        resource = Resource(self, raw=True)
+
+        if isinstance(query_string, dict):
+            if 'where' in query_string:
+                query_string['where'] = json.dumps(query_string['where'])
+            query_string = urlencode(query_string)
+
+        rkwargs['query_string'] = query_string
+        args = []
+        if path:
+            args.append(path)
+        ctx = self.app.test_request_context(*args, **rkwargs)
+
+        with ctx:
+            kwargs = kwargs or {}
+            return resource.dispatch_request(**kwargs)
 
     def specs_view(self):
         specs = {

@@ -105,6 +105,9 @@ class Resource(with_metaclass(ResourceMeta, View)):
         # per_page: Paginate results (set to None for disable pagination)
         per_page = 100
 
+        # link_header: Add Link header with pagination
+        page_link_header = True
+
         # url: URL for collection, if it is None it will be calculated
         # url_detail: URL for resource detail, if it is None it will be calculated
         url = url_detail = None
@@ -123,9 +126,10 @@ class Resource(with_metaclass(ResourceMeta, View)):
         # Redefine Schema.Meta completely
         schema_meta = None
 
-    def __init__(self, api=None, **kwargs):
+    def __init__(self, api=None, raw=False, **kwargs):
         self.api = api
-        return super(Resource, self).__init__(**kwargs)
+        self.raw = raw
+        super(Resource, self).__init__(**kwargs)
 
     def dispatch_request(self, *args, **kwargs):
         self.auth = self.authorize(*args, **kwargs)
@@ -161,7 +165,8 @@ class Resource(with_metaclass(ResourceMeta, View)):
                         page = int(request.args.get(PAGE_ARG, 0))
                         offset = page * per_page
                         self.collection, total = self.paginate(offset, per_page)
-                        headers = make_pagination_headers(per_page, page, total)
+                        headers = make_pagination_headers(
+                            per_page, page, total, self.meta.page_link_header)
                 except ValueError:
                     raise APIError('Pagination params are invalid.')
 
@@ -179,6 +184,8 @@ class Resource(with_metaclass(ResourceMeta, View)):
 
     def to_json_response(self, response, headers=None):
         """Serialize simple response to Flask response."""
+        if self.raw:
+            return response
         response = current_app.response_class(
             dumps(response, indent=2), mimetype='application/json')
         if headers:
@@ -263,11 +270,14 @@ class Resource(with_metaclass(ResourceMeta, View)):
         self.collection.remove(resource)
 
 
-def make_pagination_headers(limit, curpage, total):
+def make_pagination_headers(limit, curpage, total, link_header=True):
     """Return Link Hypermedia Header."""
     lastpage = int(math.ceil(1.0 * total / limit) - 1)
     headers = {'X-Total-Count': str(total), 'X-Limit': str(limit),
                'X-Page-Last': str(lastpage), 'X-Page': str(curpage)}
+
+    if not link_header:
+        return headers
 
     base = "{}?%s".format(request.path)
     links = {}

@@ -1,4 +1,6 @@
+"""Support Peewee ORM."""
 from __future__ import absolute_import
+from peewee import SQL
 
 from .resource import ResourceOptions, Resource, APIError, logger
 from .filters import Filter as VanilaFilter, Filters
@@ -13,11 +15,14 @@ except ImportError:
 
 class Filter(VanilaFilter):
 
+    """Filter Peewee Collection."""
+
     operators = VanilaFilter.operators
     operators['$in'] = lambda v, c: v << c
     operators['$nin'] = lambda v, c: ~(v << c)
     operators['$none'] = lambda f, v: f >> v
     operators['$like'] = lambda f, v: f % v
+    operators['$ilike'] = lambda f, v: f ** v
     operators['$contains'] = lambda f, v: f.contains(v)
     operators['$starts'] = lambda f, v: f.startswith(v)
     operators['$ends'] = lambda f, v: f.endswith(v)
@@ -26,23 +31,34 @@ class Filter(VanilaFilter):
 
     list_ops = VanilaFilter.list_ops + ('$between', '$nin')
 
+    mfield = None
+
+    def __init__(self, name, fname=None, field=None, mfield=None):
+        super(Filter, self).__init__(name, fname, field)
+        self.mfield = mfield or self.mfield
+
     def apply(self, collection, ops, resource=None, **kwargs):
         """Filter given Peewee collection."""
-        if resource is None:
+        if not self.mfield and resource is None:
             return collection
         logger.debug('Apply filter %s (%r)', self.name, ops)
-        mfield = resource.meta.model._meta.fields.get(self.field.attribute)
+        mfield = self.mfield or resource.meta.model._meta.fields.get(self.field.attribute)
         return collection.where(*[op(mfield, val) for op, val in ops])
 
 
 class ModelFilters(Filters):
+
+    """Filter Peewee Collection."""
 
     FILTER_CLASS = Filter
 
 
 class ModelResourceOptions(ResourceOptions):
 
+    """Peewee Resource Options."""
+
     def __init__(self, cls):
+        """Get meta from given model."""
         super(ModelResourceOptions, self).__init__(cls)
         self.name = (self.meta and getattr(self.meta, 'name', None)) or \
             self.model and self.model._meta.db_table or self.name
@@ -63,11 +79,15 @@ class ModelResource(Resource):
     OPTIONS_CLASS = ModelResourceOptions
 
     class Meta:
+
+        """Default options."""
+
         model = None
         filters_converter = ModelFilters
         schema = {}
 
     def get_many(self, *args, **kwargs):
+        """Setup queryset."""
         return self.meta.model.select()
 
     def sort(self, collection, *sorting, **Kwargs):
@@ -75,9 +95,7 @@ class ModelResource(Resource):
         logger.debug('Sort collection: %r', sorting)
         sorting_ = []
         for name, desc in sorting:
-            field = self.meta.model._meta.fields.get(name)
-            if field is None:
-                continue
+            field = self.meta.model._meta.fields.get(name) or SQL(name)
             if desc:
                 field = field.desc()
             sorting_.append(field)
@@ -99,6 +117,7 @@ class ModelResource(Resource):
         return resource
 
     def get_schema(self, resource=None, **kwargs):
+        """Put resource to schema."""
         return self.Schema(instance=resource)
 
     def save(self, resource):
@@ -116,3 +135,5 @@ class ModelResource(Resource):
         """Paginate queryset."""
         logger.debug('Paginate collection, offset: %d, limit: %d', offset, limit)
         return self.collection.offset(offset).limit(limit), self.collection.count()
+
+# pylama:ignore=E1102,W0212
