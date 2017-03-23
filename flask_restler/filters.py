@@ -85,6 +85,7 @@ class Filters(object):
         return self.FILTER_CLASS(name, field=field)
 
     def filter(self, collection, resource, *args, **kwargs):
+        request.filters = {}
         data = request.args.get('where')
         if not data or self.filters is None:
             return collection
@@ -96,7 +97,6 @@ class Filters(object):
 
         logger.debug('Filter resources: %r', data)
 
-        request.filters = {}
         filters = [f for f in self.filters if f.fname in data]
         logger.debug('Filters active: %r', filters)
         for f in filters:
