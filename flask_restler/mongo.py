@@ -138,6 +138,10 @@ class MongoChain(object):
             return dict(self.query, **query)
         return self.query
 
+    def __iter__(self):
+        """Iterate by self collection."""
+        return self.collection.find(self.query, self.projection)
+
     def __getattr__(self, name):
         """Proxy any attributes except find to self.collection."""
         logger.debug('Mongo load: %r', self.query)
