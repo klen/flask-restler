@@ -82,7 +82,7 @@ def test_resource(app, api, client):
         methods = 'get',
 
         class Meta:
-            collection = DB.user
+            collection = lambda: DB.user
             aggregate = [{'$group': {'_id': '$login'}}]
 
     response = client.get('/api/v1/users')

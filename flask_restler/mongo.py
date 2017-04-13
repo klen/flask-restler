@@ -1,5 +1,6 @@
 import bson
 import marshmallow as ma
+from types import FunctionType
 
 from .filters import Filter as VanilaFilter, Filters
 from .resource import ResourceOptions, Resource, APIError, logger
@@ -44,6 +45,7 @@ class MongoSchema(ma.Schema):
 class MongoOptions(ResourceOptions):
 
     def __init__(self, cls):
+        self._collection = None
         super(MongoOptions, self).__init__(cls)
         self.name = self.meta and getattr(self.meta, 'name', None)
         if not self.collection:
@@ -55,6 +57,18 @@ class MongoOptions(ResourceOptions):
             meta = type('Meta', (object,), self.schema_meta)
             cls.Schema = type(
                 self.name.title() + 'Schema', (MongoSchema,), dict({'Meta': meta}, **self.schema))
+
+    @property
+    def collection(self):
+        """Support lambdas as collection."""
+        if isinstance(self._collection, FunctionType):
+            return self._collection()
+        return self._collection
+
+    @collection.setter
+    def collection(self, value):
+        """Store initial values."""
+        self._collection = value
 
 
 class Filter(VanilaFilter):
