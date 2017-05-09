@@ -13,6 +13,15 @@ except ImportError:
     raise
 
 
+def ensure_join(qs, lm, rm):
+    """TODO: remove me when problem in Peewee will be fixed."""
+    ctx = qs._query_ctx
+    for join in qs._joins.get(lm, []):
+        if join.dest is rm:
+            return qs
+    return qs.switch(lm).join(rm, on=on, **join_kwargs).switch(ctx)
+
+
 class Filter(VanilaFilter):
 
     """Filter Peewee Collection."""
@@ -46,7 +55,7 @@ class Filter(VanilaFilter):
 
         # Auto join to another collection
         if self.mfield and self.mfield.model_class is not resource.meta.model:
-            collection = collection.ensure_join(resource.meta.model, self.mfield.model_class)
+            collection = ensure_join(collection, resource.meta.model, self.mfield.model_class)
 
         mfield = self.mfield or resource.meta.model._meta.fields.get(self.field.attribute)
         return collection.where(*[op(mfield, val) for op, val in ops])
