@@ -13,7 +13,7 @@ except ImportError:
     raise
 
 
-def ensure_join(qs, lm, rm):
+def ensure_join(qs, lm, rm, on=None, **join_kwargs):
     """TODO: remove me when problem in Peewee will be fixed."""
     ctx = qs._query_ctx
     for join in qs._joins.get(lm, []):
