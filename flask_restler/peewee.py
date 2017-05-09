@@ -41,7 +41,13 @@ class Filter(VanilaFilter):
         """Filter given Peewee collection."""
         if not self.mfield and resource is None:
             return collection
+
         logger.debug('Apply filter %s (%r)', self.name, ops)
+
+        # Auto join to another collection
+        if self.mfield and self.mfield.model_class is not resource.meta.model:
+            collection = collection.ensure_join(self.mfield.model_class)
+
         mfield = self.mfield or resource.meta.model._meta.fields.get(self.field.attribute)
         return collection.where(*[op(mfield, val) for op, val in ops])
 
