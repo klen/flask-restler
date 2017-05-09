@@ -240,7 +240,7 @@ class Resource(with_metaclass(ResourceMeta, View)):
         """Get resource or collection of resources."""
         logger.debug('Get resources (%r)', resource)
         if resource is not None and resource != '':
-            return self.to_simple(resource, **kwargs)
+            return self.to_simple(resource, resource=resource, **kwargs)
 
         return self.to_simple(self.collection, many=True, **kwargs)
 
