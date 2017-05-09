@@ -46,7 +46,7 @@ class Filter(VanilaFilter):
 
         # Auto join to another collection
         if self.mfield and self.mfield.model_class is not resource.meta.model:
-            collection = collection.ensure_join(self.mfield.model_class)
+            collection = collection.ensure_join(resource.meta.model, self.mfield.model_class)
 
         mfield = self.mfield or resource.meta.model._meta.fields.get(self.field.attribute)
         return collection.where(*[op(mfield, val) for op, val in ops])
