@@ -43,6 +43,7 @@ class Filter(VanilaFilter):
     mfield = None
 
     def __init__(self, name, fname=None, field=None, mfield=None):
+        """Initialize filter."""
         super(Filter, self).__init__(name, fname, field)
         self.mfield = mfield or self.mfield
 
@@ -54,7 +55,8 @@ class Filter(VanilaFilter):
         logger.debug('Apply filter %s (%r)', self.name, ops)
 
         # Auto join to another collection
-        if self.mfield and self.mfield.model_class is not resource.meta.model:
+        if self.mfield and hasattr(self.mfield, 'model_class') and \
+                self.mfield.model_class is not resource.meta.model:
             collection = ensure_join(collection, resource.meta.model, self.mfield.model_class)
 
         mfield = self.mfield or resource.meta.model._meta.fields.get(self.field.attribute)
