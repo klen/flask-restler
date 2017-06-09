@@ -85,5 +85,6 @@ def test_resource(app, api, client):
             collection = lambda: DB.user
             aggregate = [{'$group': {'_id': '$login'}}]
 
-    response = client.get('/api/v1/users')
+    response = client.get('/api/v1/users?sort=name')
     assert response.status_code == 200
+    assert UserGroupResouce.meta.aggregate == [{'$group': {'_id': '$login'}}]

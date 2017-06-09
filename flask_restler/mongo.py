@@ -1,12 +1,17 @@
+"""Support Mongo DB."""
+from types import FunctionType
+
 import bson
 import marshmallow as ma
-from types import FunctionType
+from flask._compat import string_types
 
 from .filters import Filter as VanilaFilter, Filters
 from .resource import ResourceOptions, Resource, APIError, logger
 
 
 class ObjectId(ma.fields.Field):
+
+    """ObjectID Marshmallow Field."""
 
     def _deserialize(self, value, attr, data):
         try:
@@ -22,9 +27,12 @@ class ObjectId(ma.fields.Field):
 
 class MongoSchema(ma.Schema):
 
+    """Serialize/deserialize results from mongo."""
+
     _id = ObjectId()
 
     def __init__(self, instance=None, **kwargs):
+        """Initialize the schema."""
         self.instance = instance
         super(MongoSchema, self).__init__(**kwargs)
 
@@ -38,13 +46,17 @@ class MongoSchema(ma.Schema):
         return data
 
     def load(self, data, instance=None, *args, **kwargs):
+        """Load data."""
         self.instance = instance or self.instance
         return super(MongoSchema, self).load(data, *args, **kwargs)
 
 
 class MongoOptions(ResourceOptions):
 
+    """Tune Mongo resource."""
+
     def __init__(self, cls):
+        """Initialize the resource."""
         self._collection = None
         super(MongoOptions, self).__init__(cls)
         self.name = self.meta and getattr(self.meta, 'name', None)
@@ -73,6 +85,8 @@ class MongoOptions(ResourceOptions):
 
 class Filter(VanilaFilter):
 
+    """Filter Mongo collections."""
+
     operators = {
         '$eq': '$eq',
         '$ge': '$gte',
@@ -92,12 +106,14 @@ class Filter(VanilaFilter):
 
 class MongoFilters(Filters):
 
+    """Converter for Mongo resources."""
+
     FILTER_CLASS = Filter
 
 
 class MongoChain(object):
 
-    """ Support query chains.
+    """Support query chains.
 
     Only for `find` and `find_one` methods.
 
@@ -119,21 +135,26 @@ class MongoChain(object):
     )
 
     def __init__(self, collection):
+        """Initialize the resource."""
         self.collection = collection
         self.query = {}
         self.projection = None
+        self.sorting = None
 
     def find(self, query=None, projection=None):
+        """Store filters in self."""
         self.query = self.__update__(query)
         self.projection = projection
         return self
 
     def find_one(self, query=None, projection=None):
+        """Apply filters and return cursor."""
         query = self.__update__(query)
         logger.debug('Mongo find one: %r', query)
         return self.collection.find_one(query, projection=projection)
 
     def aggregate(self, pipeline, **kwargs):
+        """Aggregate collection."""
         if self.query:
             for params in pipeline:
                 if '$match' in params:
@@ -142,18 +163,37 @@ class MongoChain(object):
             else:
                 pipeline.insert(0, {'$match': self.query})
             logger.debug('Mongo aggregate: %r', pipeline)
+
+        if self.sorting:
+            pipeline = [p for p in pipeline if '$sort' not in p]
+            pipeline.append({'$sort': dict(self.sorting)})
+
         return self.collection.aggregate(pipeline, **kwargs)
 
+    def sort(self, key, direction=1):
+        """Save ordering properties."""
+        if isinstance(key, string_types):
+            self.sorting = [(key, direction)]
+        else:
+            self.sorting = key
+
+        return self
+
     def __repr__(self):
+        """String representation."""
         return "<MongoChain (%s) %r>" % (self.collection.name, self.query)
 
     def __update__(self, query):
+        """Update stored query."""
         if query:
             return dict(self.query, **query)
         return self.query
 
     def __iter__(self):
         """Iterate by self collection."""
+        if self.sorting:
+            return self.collection.find(self.query, self.projection).sort(self.sorting)
+
         return self.collection.find(self.query, self.projection)
 
     def __getattr__(self, name):
@@ -161,6 +201,8 @@ class MongoChain(object):
         logger.debug('Mongo load: %r', self.query)
         if name in self.CURSOR_METHODS:
             cursor = self.collection.find(self.query, self.projection)
+            if self.sorting:
+                cursor = cursor.sort(self.sorting)
             return getattr(cursor, name)
         return getattr(self.collection, name)
 
@@ -172,6 +214,9 @@ class MongoResource(Resource):
     OPTIONS_CLASS = MongoOptions
 
     class Meta:
+
+        """Default params."""
+
         collection = None
         filters = 'login',
         filters_converter = MongoFilters
@@ -210,7 +255,8 @@ class MongoResource(Resource):
         return super(MongoResource, self).to_simple(data, many=many, **kwargs)
 
     def get_schema(self, resource=None, **kwargs):
-        return self.Schema(instance=resource)
+        """Create the resource schema."""
+        return self.Schema(instance=resource)  # noqa
 
     def save(self, resource):
         """Save resource to DB."""
@@ -224,14 +270,10 @@ class MongoResource(Resource):
     def sort(self, collection, *sorting, **Kwargs):
         """Sort resources."""
         sorting = {name: -1 if desc else 1 for name, desc in sorting}
-        if self.meta.aggregate:
-            self.meta.aggregate = [p for p in self.meta.aggregate if '$sort' not in p]
-            self.meta.aggregate.append({'$sort': sorting})
-            return self.collection
-
         return collection.sort(list(sorting.items()))
 
     def delete(self, resource=None, **kwargs):
+        """Delete a resource from Mongo collection."""
         if resource is None:
             raise APIError('Resource not found', status_code=404)
         self.collection.delete_one({self.meta.object_id: resource[self.meta.object_id]})
