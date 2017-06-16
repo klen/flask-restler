@@ -174,9 +174,9 @@ class Resource(with_metaclass(ResourceMeta, View)):
 
             # Sort resources
             if SORT_ARG in request.args:
-                sorting = [(name.strip('-'), name.startswith('-'))
-                           for name in request.args[SORT_ARG].split(',')
-                           if name in self.meta.sorting]
+                sorting = ((name.strip('-'), name.startswith('-'))
+                           for name in request.args[SORT_ARG].split(','))
+                sorting = ((n, d) for n, d in sorting if n in self.meta.sorting)
                 self.collection = self.sort(self.collection, *sorting, **kwargs)
 
             # Paginate resources

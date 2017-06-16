@@ -64,14 +64,19 @@ def test_resource(app, api, client):
         'name': 'Dave Macaroff',
     })
 
+    response = client.post_json('/api/v1/user', {
+        'login': 'zigmund',
+        'name': 'Zigmund McTest',
+    })
+
     response = client.get('/api/v1/user')
-    assert len(response.json) == 2
+    assert len(response.json) == 3
 
     response = client.get('/api/v1/user?sort=login')
     assert response.json[0]['login'] == 'dave'
 
     response = client.get('/api/v1/user?sort=-login')
-    assert response.json[0]['login'] == 'mike'
+    assert response.json[0]['login'] == 'zigmund'
 
     response = client.get('/api/v1/user?where={"login": "dave"}')
     assert len(response.json) == 1
@@ -81,7 +86,7 @@ def test_resource(app, api, client):
     assert not response.json
 
     response = client.get('/api/v1/user')
-    assert len(response.json) == 1
+    assert len(response.json) == 2
 
     response = client.get('/api/v1/_specs')
     assert response.json
