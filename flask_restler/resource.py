@@ -2,6 +2,7 @@
 
 from __future__ import absolute_import
 
+import collections
 import math
 import logging
 
@@ -57,7 +58,9 @@ class ResourceOptions(object):
             self.specs = dict(self.specs)
 
         if self.strict:  # noqa
-            self.strict = set(self.strict)
+            if not isinstance(self.strict, collections.Iterable):
+                self.strict = INTERNAL_ARGS
+            self.strict = set(self.strict) | INTERNAL_ARGS
 
         # Setup endpoints
         self.endpoints = getattr(self, 'endpoints', {})
@@ -147,10 +150,9 @@ class Resource(with_metaclass(ResourceMeta, View)):
 
     def dispatch_request(self, *args, **kwargs):
         """Process current request."""
-        if self.meta.strict and not ((self.meta.strict | INTERNAL_ARGS) >= set(request.args)):
-            raise APIError('Invalid query params: %r' % [n for n in request.args if n not in (
-                self.meta.strict | INTERNAL_ARGS
-            )])
+        if self.meta.strict and not (self.meta.strict >= set(request.args)):
+            raise APIError('Invalid query params: %r' % [
+                n for n in request.args if n not in self.meta.strict])
 
         self.auth = self.authorize(*args, **kwargs)
         self.collection = self.get_many(*args, **kwargs)
