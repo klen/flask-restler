@@ -47,19 +47,19 @@ class Filter(VanilaFilter):
         super(Filter, self).__init__(name, fname, field)
         self.mfield = mfield or self.mfield
 
-    def apply(self, collection, ops, resource=None, **kwargs):
+    def apply(self, collection, ops, view=None, **kwargs):
         """Filter given Peewee collection."""
-        if not self.mfield and resource is None:
+        if not self.mfield and view is None:
             return collection
 
         logger.debug('Apply filter %s (%r)', self.name, ops)
 
         # Auto join to another collection
         if self.mfield and hasattr(self.mfield, 'model_class') and \
-                self.mfield.model_class is not resource.meta.model:
-            collection = ensure_join(collection, resource.meta.model, self.mfield.model_class)
+                self.mfield.model_class is not view.meta.model:
+            collection = ensure_join(collection, view.meta.model, self.mfield.model_class)
 
-        mfield = self.mfield or resource.meta.model._meta.fields.get(self.field.attribute)
+        mfield = self.mfield or view.meta.model._meta.fields.get(self.field.attribute)
         return collection.where(*[op(mfield, val) for op, val in ops])
 
 

@@ -42,6 +42,7 @@ def test_resource(app, api, client):
             model = User
             filters = 'name', 'login'
             schema_exclude = 'password',
+            sorting = 'login',
 
     response = client.get('/api/v1/user')
     assert not response.json
@@ -74,6 +75,7 @@ def test_resource(app, api, client):
 
     response = client.get('/api/v1/user?where={"login": "dave"}')
     assert len(response.json) == 1
+    assert response.json[0]['login'] == 'dave'
 
     response = client.delete('/api/v1/user/1')
     assert not response.json

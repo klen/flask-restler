@@ -59,6 +59,7 @@ def test_resource(app, api, client, sa_session):
             session = sa_session
             filters = 'login', 'name'
             schema_exclude = 'password',
+            sorting = 'login',
 
     response = client.get('/api/v1/user')
     assert not response.json

@@ -16,6 +16,7 @@ def test_resource(app, api, client):
 
         class Meta:
             collection = DB.user
+            sorting = 'login',
             schema = {
                 'login': fields.String(),
                 'name': fields.String(),

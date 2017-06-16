@@ -17,9 +17,9 @@ class Filter(VanilaFilter):
 
     operators = VanilaFilter.operators
 
-    def filter(self, collection, data, resource=None):
+    def filter(self, collection, data, view=None, **kwargs):
         ops = self.parse(data)
-        prop = getattr(resource.meta.model, self.name, None)
+        prop = getattr(view.meta.model, self.name, None)
         if not prop:
             return collection
         return collection.filter(*(op(prop, val) for op, val in ops))

@@ -1,3 +1,5 @@
+"""Support filters."""
+
 import json
 import operator
 
@@ -7,8 +9,10 @@ from marshmallow import fields, missing, ValidationError
 from . import logger
 
 
-class Filter(object):
+FILTERS_ARG = 'where'
 
+
+class Filter(object):
     """Base filter class."""
 
     operators = {
@@ -24,6 +28,7 @@ class Filter(object):
     list_ops = '$in',
 
     def __init__(self, name, fname=None, field=None):
+        """Initialize filter."""
         self.name = name
         self.fname = fname or name
         self.field = field or fields.Raw(attribute=name)
@@ -57,7 +62,7 @@ class Filter(object):
         except ValidationError:
             return collection
 
-    def apply(self, collection, ops, **kwargs):
+    def apply(self, collection, ops, **kwargs):  # noqa
         """Apply current filter."""
         def validator(obj):
             return all(op(obj, val) for (op, val) in ops)
@@ -65,28 +70,33 @@ class Filter(object):
 
 
 class Filters(object):
+    """Filters helper."""
 
     FILTER_CLASS = Filter
 
-    def __init__(self, filters, Resource):
+    def __init__(self, filters, View):
+        """Initialize the helper."""
         self._filters = filters
-        self.Resource = Resource
+        self.View = View
 
     @cached_property
     def filters(self):
+        """Prepare filters."""
         if not self._filters:
             return None
         return list(f if isinstance(f, Filter) else self.convert(f) for f in self._filters)
 
     def convert(self, name):
-        if not self.Resource.Schema or name not in self.Resource.Schema._declared_fields:
+        """Setup a filter by name."""
+        if not self.View.Schema or name not in self.View.Schema._declared_fields:  # noqa
             return self.FILTER_CLASS(name)
-        field = self.Resource.Schema._declared_fields[name]
+        field = self.View.Schema._declared_fields[name]  # noqa
         return self.FILTER_CLASS(name, field=field)
 
-    def filter(self, collection, resource, *args, **kwargs):
+    def filter(self, collection, view, *args, **kwargs):
+        """Filter the given collection."""
         request.filters = {}
-        data = request.args.get('where')
+        data = request.args.get(FILTERS_ARG)
         if not data or self.filters is None:
             return collection
 
@@ -100,5 +110,5 @@ class Filters(object):
         filters = [f for f in self.filters if f.fname in data]
         logger.debug('Filters active: %r', filters)
         for f in filters:
-            collection = f.filter(collection, data, resource=resource, **kwargs)
+            collection = f.filter(collection, data, view=view, **kwargs)
         return collection
