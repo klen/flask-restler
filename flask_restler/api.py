@@ -35,6 +35,7 @@ class Api(Blueprint):
 
         if self.specs:
             kwargs['static_folder'] = STATIC
+            kwargs['template_folder'] = TEMPLATE
 
         super(Api, self).__init__(name, import_name, url_prefix=url_prefix, **kwargs)
         self.app = None
