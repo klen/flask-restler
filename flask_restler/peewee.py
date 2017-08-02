@@ -13,6 +13,15 @@ except ImportError:
     raise
 
 
+def ensure_join(qs, lm, rm, on=None, **join_kwargs):
+    """TODO: remove me when problem in Peewee will be fixed."""
+    ctx = qs._query_ctx
+    for join in qs._joins.get(lm, []):
+        if join.dest is rm:
+            return qs
+    return qs.switch(lm).join(rm, on=on, **join_kwargs).switch(ctx)
+
+
 class Filter(VanilaFilter):
 
     """Filter Peewee Collection."""
@@ -34,15 +43,23 @@ class Filter(VanilaFilter):
     mfield = None
 
     def __init__(self, name, fname=None, field=None, mfield=None):
+        """Initialize filter."""
         super(Filter, self).__init__(name, fname, field)
         self.mfield = mfield or self.mfield
 
-    def apply(self, collection, ops, resource=None, **kwargs):
+    def apply(self, collection, ops, view=None, **kwargs):
         """Filter given Peewee collection."""
-        if not self.mfield and resource is None:
+        if not self.mfield and view is None:
             return collection
+
         logger.debug('Apply filter %s (%r)', self.name, ops)
-        mfield = self.mfield or resource.meta.model._meta.fields.get(self.field.attribute)
+
+        # Auto join to another collection
+        if self.mfield and hasattr(self.mfield, 'model_class') and \
+                self.mfield.model_class is not view.meta.model:
+            collection = ensure_join(collection, view.meta.model, self.mfield.model_class)
+
+        mfield = self.mfield or view.meta.model._meta.fields.get(self.field.attribute)
         return collection.where(*[op(mfield, val) for op, val in ops])
 
 
