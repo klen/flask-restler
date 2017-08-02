@@ -151,8 +151,7 @@ class Resource(with_metaclass(ResourceMeta, View)):
     def dispatch_request(self, *args, **kwargs):
         """Process current request."""
         if self.meta.strict and not (self.meta.strict >= set(request.args)):
-            raise APIError('Invalid query params: %r' % [
-                n for n in request.args if n not in self.meta.strict])
+            raise APIError('Invalid query params.')
 
         self.auth = self.authorize(*args, **kwargs)
         self.collection = self.get_many(*args, **kwargs)
