@@ -136,47 +136,59 @@ class Api(Blueprint):
 
     def specs_view(self):
         specs = {
-            'swagger': '2.0',
+            'openapi': '3.0.0',
             'info': {
+                'title': self.name,
                 'description': self.__doc__,
                 'version': self.version,
-                'title': self.name,
             },
             'basePath': self.url_prefix,
             'tags': [],
             'paths': {},
-            'definitions': {},
+            'components': {'schemas': {}},
             'host': request.host,
-            'schemes': [request.scheme],
         }
 
         for resource in self.resources:
 
+            defaults = {
+                'consumes': ['application/json'],
+                'produces': ['application/json'],
+                'security': [{'api_key': []}],
+                'tags': [resource.meta.name],
+                'responses': {
+                    200: {
+                        'description': 'OK',
+                        'content': {
+                            'application/json': {
+                            }
+                        }
+                    }
+                }
+            }
             if resource.Schema:
                 jsonschema = schema2jsonschema(resource.Schema)
                 for prop in jsonschema.get('properties', {}).values():
                     if prop.get('type') == 'string' and prop.get('default'):
                         prop['default'] = str(prop['default'])
 
-                specs['definitions'][resource.meta.name] = jsonschema
+                specs['components']['schemas'][resource.meta.name] = jsonschema
+                defaults['responses'][200]['content']['application/json']['schema'] = {
+                    '$ref':  '#/components/schemas/{}'.format(resource.meta.name)
+                }
 
             specs['tags'].append({
                 'name': resource.meta.name,
                 'description': resource.__doc__ or resource.__class__.__doc__,
             })
-            defaults = {
-                'consumes': ['application/json'],
-                'produces': ['application/json'],
-                'security': [{'api_key': []}],
-                'tags': [resource.meta.name],
-                'responses': {200: "OK"}
-            }
 
             for endpoint, (url_, name_, params_) in resource.meta.endpoints.values():
                 specs['paths'][
                     "%s/%s" % (resource.meta.url.rstrip('/'), url_flask_to_swagger(url_))] = path = {}
                 path['get'] = dict(
-                    summary=endpoint.__doc__, description=endpoint.__doc__, **defaults)
+                    summary=endpoint.__doc__,
+                    description=endpoint.__doc__,
+                    **defaults)
                 if hasattr(endpoint, 'specs'):
                     path['get'].update(endpoint.specs)
 
@@ -188,15 +200,18 @@ class Api(Blueprint):
                 path[method] = dict(summary=view.__doc__, description=view.__doc__, **defaults)
 
                 if method == 'post':
-                    path[method]['parameters'] = [{
+                    params = {
                         'in': 'body',
                         'name': 'body',
                         'description': 'resource body',
                         'required': True,
-                        'schema': {
-                            '$ref': '#/definitions/%s' % resource.meta.name
-                        }
-                    }]
+                        'schema': {},
+                    }
+                    if resource.Schema:
+                        params['schema']['$ref'] = '#/components/schemas/{}'.format(
+                            resource.meta.name)
+
+                    path[method]['parameters'] = [params]
 
                 if resource.meta.specs:
                     path[method].update(resource.meta.specs)
@@ -219,15 +234,17 @@ class Api(Blueprint):
                         }], **defaults)
 
                     if method == 'put':
-                        path[method]['parameters'].append({
+                        params = {
                             'in': 'body',
                             'name': 'body',
                             'description': 'resource body',
                             'required': True,
-                            'schema': {
-                                '$ref': '#/definitions/%s' % resource.meta.name
-                            }
-                        })
+                            'schema': {},
+                        }
+                        if resource.Schema:
+                            params['schema']['$ref'] = '#/components/schemas/{}'.format(
+                                resource.meta.name)
+                        path[method]['parameters'].append(params)
 
                 if resource.meta.specs:
                     path[method].update(resource.meta.specs)
