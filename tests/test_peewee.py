@@ -1,5 +1,6 @@
 import peewee as pw
 import datetime as dt
+import marshmallow as ma
 from playhouse.db_url import connect
 
 
@@ -20,6 +21,7 @@ class User(pw.Model):
     login = pw.CharField(255)
     name = pw.CharField(255, null=True)
     password = pw.CharField(127, null=True)
+    is_active = pw.BooleanField(default=True)
 
     role = pw.ForeignKeyField(Role, null=True)
 
@@ -90,3 +92,28 @@ def test_resource(app, api, client):
 
     response = client.get('/api/v1/_specs')
     assert response.json
+
+
+def test_custom_converter(app, api, client):
+    from flask_restler.peewee import ModelResource
+    from marshmallow_peewee.convert import ModelConverter
+
+    class CustomConverter(ModelConverter):
+
+        def convert_BooleanField(self, field, validate=None, **params):
+            return ma.fields.Int(**params)
+
+    @api.connect
+    class UserResouce(ModelResource):
+
+        methods = 'get', 'post', 'put', 'delete'
+
+        class Meta:
+            model = User
+            models_converter = CustomConverter
+            filters = 'name', 'login'
+            schema_exclude = 'password',
+            sorting = 'login',
+
+    response = client.get('/api/v1/user')
+    assert response.json[0]['is_active'] is 1

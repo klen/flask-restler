@@ -85,6 +85,9 @@ class ModelResourceOptions(ResourceOptions):
 
         if not cls.Schema:
             meta = type('Meta', (object,), dict({'model': self.model}, **self.schema_meta))
+            if self.models_converter:
+                meta.model_converter = self.models_converter
+
             cls.Schema = type(
                 self.name.title() + 'Schema', (ModelSchema,), dict({'Meta': meta}, **self.schema))
 
@@ -101,6 +104,7 @@ class ModelResource(Resource):
 
         model = None
         filters_converter = ModelFilters
+        models_converter = None
         schema = {}
 
     def get_many(self, *args, **kwargs):
