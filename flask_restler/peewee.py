@@ -155,6 +155,10 @@ class ModelResource(Resource):
     def paginate(self, offset=0, limit=None):
         """Paginate queryset."""
         logger.debug('Paginate collection, offset: %d, limit: %d', offset, limit)
-        return self.collection.offset(offset).limit(limit), self.collection.count()
+        qs = self.collection.order_by()
+        if qs._group_by:
+            qs._select = qs._group_by
+
+        return self.collection.offset(offset).limit(limit), qs.count()
 
 # pylama:ignore=E1102,W0212
