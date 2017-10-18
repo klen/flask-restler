@@ -185,8 +185,11 @@ class MongoChain(object):
 
     def __update__(self, query):
         """Update stored query."""
-        if query:
-            return dict(self.query, **query)
+        for field, filters in query.items():
+            if field in self.query:
+                filters = {'$and': [self.query[field], filters]}
+            self.query[field] = filters
+
         return self.query
 
     def __iter__(self):
