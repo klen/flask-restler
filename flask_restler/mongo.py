@@ -137,7 +137,7 @@ class MongoChain(object):
     def __init__(self, collection):
         """Initialize the resource."""
         self.collection = collection
-        self.query = {}
+        self.query = []
         self.projection = None
         self.sorting = None
 
@@ -150,6 +150,7 @@ class MongoChain(object):
     def find_one(self, query=None, projection=None):
         """Apply filters and return cursor."""
         query = self.__update__(query)
+        query = query and {'$and': query} or {}
         logger.debug('Mongo find one: %r', query)
         return self.collection.find_one(query, projection=projection)
 
@@ -158,10 +159,11 @@ class MongoChain(object):
         if self.query:
             for params in pipeline:
                 if '$match' in params:
-                    params['$match'] = self.__update__(params['$match'])
+                    query = self.__update__(params['$match'])
+                    params['$match'] = {'$and': query}
                     break
             else:
-                pipeline.insert(0, {'$match': self.query})
+                pipeline.insert(0, {'$match': {'$and': query}})
             logger.debug('Mongo aggregate: %r', pipeline)
 
         if self.sorting:
@@ -185,25 +187,25 @@ class MongoChain(object):
 
     def __update__(self, query):
         """Update stored query."""
-        for field, filters in query.items():
-            if field in self.query:
-                filters = {'$and': [self.query[field], filters]}
-            self.query[field] = filters
+        if query:
+            self.query.append(query)
 
         return self.query
 
     def __iter__(self):
         """Iterate by self collection."""
+        query = self.query and {'$and': self.query} or {}
         if self.sorting:
-            return self.collection.find(self.query, self.projection).sort(self.sorting)
+            return self.collection.find(query, self.projection).sort(self.sorting)
 
-        return self.collection.find(self.query, self.projection)
+        return self.collection.find(query, self.projection)
 
     def __getattr__(self, name):
         """Proxy any attributes except find to self.collection."""
         logger.debug('Mongo load: %r', self.query)
         if name in self.CURSOR_METHODS:
-            cursor = self.collection.find(self.query, self.projection)
+            query = self.query and {'$and': self.query} or {}
+            cursor = self.collection.find(query, self.projection)
             if self.sorting:
                 cursor = cursor.sort(self.sorting)
             return getattr(cursor, name)
