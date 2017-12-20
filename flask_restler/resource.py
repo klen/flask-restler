@@ -155,7 +155,7 @@ class Resource(with_metaclass(ResourceMeta, View)):
             methods = ['GET']
 
         def proxy(self, *args, **kwargs):
-            return func(*args, **kwargs)
+            return func(self, *args, **kwargs)
 
         params = {m.lower(): proxy for m in methods}
         params['methods'] = methods
