@@ -8,11 +8,14 @@ def test_app(app, client):
 
 def test_simple_view(app, api, client):
 
-    @api.route('/simple')
-    def simple(*args, **kwargs):
+    @api.route('/simple', methods=['GET', 'POST'])
+    def view(*args, **kwargs):
         return {'ok': True}
 
     response = client.get('/api/v1/simple')
+    assert response.json == {'ok': True}
+
+    response = client.post('/api/v1/simple')
     assert response.json == {'ok': True}
 
 

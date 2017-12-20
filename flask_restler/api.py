@@ -86,7 +86,7 @@ class Api(Blueprint):
         def wrapper(res):
 
             if not isclass(res):
-                res = Resource.from_func(res)
+                res = Resource.from_func(res, **options)
 
             elif not issubclass(res, Resource):
                 raise ValueError('Resource should be subclass of api.Resource.')
