@@ -8,7 +8,7 @@ def test_runner(app, api, client):
 
     data = list(range(10))
 
-    @api.connect
+    @api.route
     class TestResource(Resource):
 
         class Meta:

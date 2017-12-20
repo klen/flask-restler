@@ -6,16 +6,26 @@ def test_app(app, client):
     assert response.data == b'OK'
 
 
+def test_simple_view(app, api, client):
+
+    @api.route('/simple')
+    def simple(*args, **kwargs):
+        return {'ok': True}
+
+    response = client.get('/api/v1/simple')
+    assert response.json == {'ok': True}
+
+
 def test_resource(app, api, client):
     from flask_restler import Resource
 
-    @api.connect
+    @api.route
     class HelloResource(Resource):
 
         def get(self, resource=None, **kwargs):
             return 'Hello, %s!' % (resource and resource.title() or 'World')
 
-    @api.connect('/hello/<name>/how-are-you')
+    @api.route('/hello/<name>/how-are-you')
     class HowAreYouResource(Resource):
 
         def get(self, resource=None, name=None, **kwargs):
@@ -41,7 +51,7 @@ def test_resource2(api, client):
 
     DATA = [1, 2]
 
-    @api.connect
+    @api.route
     class SecondResource(Resource):
 
         methods = 'get', 'post', 'put'
@@ -116,7 +126,7 @@ def test_pagination(api, client):
 
     DATA = list(range(1, 100))
 
-    @api.connect
+    @api.route
     class TestResource(Resource):
 
         class Meta:
@@ -136,7 +146,7 @@ def test_pagination(api, client):
 def test_specs(api, client):
     from flask_restler import Resource, route
 
-    @api.connect
+    @api.route
     class HelloResource(Resource):
 
         @route('/world')

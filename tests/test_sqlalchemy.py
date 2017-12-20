@@ -49,7 +49,7 @@ def migrate(sa_engine):
 def test_resource(app, api, client, sa_session):
     from flask_restler.sqlalchemy import ModelResource
 
-    @api.connect
+    @api.route
     class UserResouce(ModelResource):
 
         methods = 'get', 'post', 'put', 'delete'

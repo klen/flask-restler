@@ -35,7 +35,7 @@ database.create_tables([User, Role], safe=True)
 def test_resource(app, api, client):
     from flask_restler.peewee import ModelResource
 
-    @api.connect
+    @api.route
     class UserResouce(ModelResource):
 
         methods = 'get', 'post', 'put', 'delete'
@@ -103,7 +103,7 @@ def test_custom_converter(app, api, client):
         def convert_BooleanField(self, field, validate=None, **params):
             return ma.fields.Int(**params)
 
-    @api.connect
+    @api.route
     class UserResouce(ModelResource):
 
         methods = 'get', 'post', 'put', 'delete'

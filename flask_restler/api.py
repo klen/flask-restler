@@ -4,6 +4,8 @@ from flask import Blueprint, jsonify, request, render_template, json
 from flask._compat import string_types, PY2
 import os
 import urllib
+import warnings
+from inspect import isclass
 
 from . import APIError
 from .auth import current_user
@@ -72,13 +74,21 @@ class Api(Blueprint):
         response.status_code = error.status_code
         return response
 
-    def connect(self, resource=None, url=None, url_detail=DEFAULT, **options):
+    def connect(self, *args, **kwargs):
+        warnings.warn('The @connect method is depricated, use @route instead.')
+        return self.route(*args, **kwargs)
+
+    def route(self, resource=None, url=None, url_detail=DEFAULT, **options):
         """Connect resource to the API."""
 
         api = self
 
         def wrapper(res):
-            if not issubclass(res, Resource):
+
+            if not isclass(res):
+                res = Resource.from_func(res)
+
+            elif not issubclass(res, Resource):
                 raise ValueError('Resource should be subclass of api.Resource.')
 
             api.resources.append(res)
@@ -134,7 +144,7 @@ class Api(Blueprint):
             kwargs = kwargs or {}
             return resource.dispatch_request(**kwargs)
 
-    def specs_view(self):
+    def specs_view(self, *args, **kwargs):
         specs = {
             'openapi': '3.0.0',
             'info': {
@@ -252,12 +262,7 @@ class Api(Blueprint):
         if isinstance(self.specs, dict):
             specs.update(self.specs)
 
-        response = jsonify(specs)
-        response.headers.add_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-        response.headers.add_header('Access-Control-Allow-Origin', '*')
-        response.headers.add_header('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT')
-
-        return response
+        return specs
 
 
 def url_flask_to_swagger(source):

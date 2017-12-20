@@ -148,6 +148,19 @@ class Resource(with_metaclass(ResourceMeta, View)):
         self.auth = self.collection = None
         super(Resource, self).__init__(**kwargs)
 
+    @classmethod
+    def from_func(cls, func, methods=None, **options):
+
+        if methods is None:
+            methods = ['GET']
+
+        def proxy(self, *args, **kwargs):
+            return func(*args, **kwargs)
+
+        params = {m.lower(): proxy for m in methods}
+        params['methods'] = methods
+        return type(func.__name__, (cls,), params)
+
     def dispatch_request(self, *args, **kwargs):
         """Process current request."""
         if self.meta.strict and not (self.meta.strict >= set(request.args)):

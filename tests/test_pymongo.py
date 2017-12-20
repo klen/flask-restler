@@ -9,7 +9,7 @@ DB = MongoClient().db
 
 def test_resource(app, api, client):
 
-    @api.connect
+    @api.route
     class UserResouce(MongoResource):
 
         methods = 'get', 'post', 'put', 'delete'
@@ -77,7 +77,7 @@ def test_resource(app, api, client):
     response = client.get('/api/v1/_specs')
     assert response.json
 
-    @api.connect('/users', '/users/{user}', endpoint='api-users')
+    @api.route('/users', '/users/{user}', endpoint='api-users')
     class UserGroupResouce(MongoResource):
 
         methods = 'get',
