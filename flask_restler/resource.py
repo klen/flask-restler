@@ -6,7 +6,7 @@ import collections
 import math
 import logging
 
-from flask import request, current_app, abort
+from flask import request, current_app, abort, Response
 from flask._compat import with_metaclass
 from flask.json import dumps
 from flask.views import View
@@ -218,7 +218,7 @@ class Resource(with_metaclass(ResourceMeta, View)):
 
     def to_json_response(self, response, headers=None):
         """Serialize simple response to Flask response."""
-        if self.raw:
+        if self.raw or isinstance(response, Response):
             return response
         response = current_app.response_class(
             dumps(response, indent=2), mimetype='application/json')

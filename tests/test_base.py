@@ -19,6 +19,17 @@ def test_simple_view(app, api, client):
     assert response.json == {'ok': True}
 
 
+def test_response(app, api, client):
+    from flask import Response
+
+    @api.route('/response', methods=['GET', 'POST'])
+    def view(*args, **kwargs):
+        return Response('OK')
+
+    response = client.get('/api/v1/response')
+    assert response.data == b'OK'
+
+
 def test_resource(app, api, client):
     from flask_restler import Resource
 
