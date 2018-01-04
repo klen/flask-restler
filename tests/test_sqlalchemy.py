@@ -56,7 +56,7 @@ def test_resource(app, api, client, sa_session):
 
         class Meta:
             model = User
-            session = sa_session
+            session = lambda: sa_session
             filters = 'login', 'name'
             schema_exclude = 'password',
             sorting = 'login',

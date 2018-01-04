@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+from types import FunctionType
+
 from .filters import Filter as VanilaFilter, Filters
 from .resource import ResourceOptions, Resource, APIError
 
@@ -33,6 +35,7 @@ class ModelFilters(Filters):
 class ModelResourceOptions(ResourceOptions):
 
     def __init__(self, cls):
+        self._session = None
         super(ModelResourceOptions, self).__init__(cls)
         self.name = (self.meta and getattr(self.meta, 'name', None)) or \
             self.model and self.model.__tablename__ or self.name
@@ -52,6 +55,18 @@ class ModelResourceOptions(ResourceOptions):
         # Flask-SQLAlchemy support
         if not self.session and hasattr(self.model, 'query'):
             self.session = self.model.query.session
+
+    @property
+    def session(self):
+        """Support lambdas as session."""
+        if isinstance(self._session, FunctionType):
+            return self._session()
+        return self._session
+
+    @session.setter
+    def session(self, value):
+        """Store initial values."""
+        self._session = value
 
 
 class ModelResource(Resource):
