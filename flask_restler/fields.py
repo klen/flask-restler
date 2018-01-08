@@ -44,7 +44,7 @@ class MSTimestamp(Timestamp):
 if ma.compat.PY2:
     def datetime_to_timestamp(dt_, epoch=dt.datetime(1970, 1, 1)):
         """Convert given datetime object to timestamp in seconds."""
-        return (dt_ - epoch).total_seconds()
+        return (dt_.replace(tzinfo=None) - epoch).total_seconds()
 
 else:
 
