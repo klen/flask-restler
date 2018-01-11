@@ -49,8 +49,7 @@ class ModelResourceOptions(ResourceOptions):
                 self.name.title() + 'Schema', (ModelSchema,), dict({'Meta': meta}, **self.schema))
 
         if not self.primary_key:
-            col = inspect(self.model).primary_key[0]
-            self.primary_key = col
+            self.primary_key = inspect(self.model).primary_key[0]
 
         # Flask-SQLAlchemy support
         if not self.session and hasattr(self.model, 'query'):
