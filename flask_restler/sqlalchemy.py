@@ -50,7 +50,7 @@ class ModelResourceOptions(ResourceOptions):
 
         if not self.primary_key:
             col = inspect(self.model).primary_key[0]
-            self.primary_key = col.name
+            self.primary_key = col
 
         # Flask-SQLAlchemy support
         if not self.session and hasattr(self.model, 'query'):
@@ -104,7 +104,7 @@ class ModelResource(Resource):
         if not resource:
             return None
 
-        resource = self.collection.filter_by(**{self.meta.primary_key: resource}).first()
+        resource = self.collection.filter(self.meta.primary_key == resource).first()
         if resource is None:
             raise APIError('Resource not found', status_code=404)
 
