@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 from types import FunctionType
+from sqlalchemy import func
 
 from .filters import Filter as VanilaFilter, Filters
 from .resource import ResourceOptions, Resource, APIError
@@ -127,4 +128,7 @@ class ModelResource(Resource):
 
     def paginate(self, offset=0, limit=None):
         """Paginate queryset."""
-        return self.collection.offset(offset).limit(limit), self.collection.count()
+        count_query = self.collection.order_by(None).with_entities(
+            func.COUNT(self.meta.model.id)
+        )
+        return self.collection.offset(offset).limit(limit), count_query.scalar()
