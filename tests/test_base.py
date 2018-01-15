@@ -93,7 +93,7 @@ def test_resource2(api, client):
 
         @route('/custom22/test', methods=['get', 'post'])
         def custom2(self, **kwargs):
-            return 'CUSTOM2'
+            return {'json': True}
 
     assert SecondResource.meta.endpoints
 
@@ -121,13 +121,13 @@ def test_resource2(api, client):
     assert response.json == [22, 3]
 
     response = client.get('/api/v1/two/custom')
-    assert response.data == b'SecondResource'
+    assert response.data == b'"SecondResource"'
 
     response = client.get('/api/v1/two/custom22/test')
-    assert response.data == b'CUSTOM2'
+    assert response.json == {'json': True}
 
     response = client.post('/api/v1/two/custom22/test')
-    assert response.data == b'CUSTOM2'
+    assert response.json == {'json': True}
 
     response = client.post('/api/v1/two/custom22/test?bla-bla=22')
     assert response.status_code == 400

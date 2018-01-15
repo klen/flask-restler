@@ -175,7 +175,8 @@ class Resource(with_metaclass(ResourceMeta, View)):
         if endpoint and hasattr(self, endpoint):
             method = getattr(self, endpoint)
             logger.debug('Loaded endpoint: %s', endpoint)
-            return method(*args, **kwargs)
+            response = method(*args, **kwargs)
+            return self.to_json_response(response)
 
         headers = {}
 
