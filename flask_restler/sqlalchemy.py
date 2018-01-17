@@ -19,6 +19,8 @@ except ImportError:
 class Filter(VanilaFilter):
 
     operators = VanilaFilter.operators
+    operators['$in'] = lambda c, v: c.in_(v)
+    operators['$nin'] = lambda c, v: ~c.in_(v)
 
     def filter(self, collection, data, view=None, **kwargs):
         ops = self.parse(data)
