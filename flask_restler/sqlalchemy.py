@@ -130,5 +130,5 @@ class ModelResource(Resource):
 
     def paginate(self, offset=0, limit=None):
         """Paginate queryset."""
-        cqs = self.collection.statement.with_only_columns([func.count()]).order_by(None)
+        cqs = self.collection.with_entities(func.count()).order_by(None)
         return self.collection.offset(offset).limit(limit), self.meta.session.execute(cqs).scalar()
