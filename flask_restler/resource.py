@@ -268,7 +268,7 @@ class Resource(with_metaclass(ResourceMeta, View)):
 
     def to_simple(self, data, many=False, **kwargs):
         """Serialize response to simple object (list, dict)."""
-        schema = self.get_schema(**kwargs)
+        schema = self.get_schema(many=many, **kwargs)
         return schema.dump(data, many=many).data if schema else data
 
     def paginate(self, offset, limit):
