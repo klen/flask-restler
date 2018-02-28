@@ -47,7 +47,7 @@ def migrate(sa_engine):
 
 
 def test_resource(app, api, client, sa_session):
-    from flask_restler.sqlalchemy import ModelResource
+    from flask_restler.sqlalchemy import ModelResource, Filter
 
     @api.route
     class UserResouce(ModelResource):
@@ -56,10 +56,18 @@ def test_resource(app, api, client, sa_session):
 
         class Meta:
             model = User
-            session = lambda: sa_session
-            filters = 'login', 'name'
+            session = lambda: sa_session  # noqa
+            filters = 'login', 'name', Filter('role', mfield=Role.name)
             schema_exclude = 'password',
             sorting = 'login',
+
+        def get_many(self, **kwargs):
+            """Join on Role for roles filters."""
+            return sa_session.query(User).outerjoin(User.role)
+
+    role = Role(name='test')
+    sa_session.add(role)
+    sa_session.commit()
 
     response = client.get('/api/v1/user')
     assert not response.json
@@ -79,6 +87,7 @@ def test_resource(app, api, client, sa_session):
     response = client.post_json('/api/v1/user', {
         'login': 'dave',
         'name': 'Dave Macaroff',
+        'role': role.id,
     })
 
     response = client.get('/api/v1/user')
@@ -98,3 +107,9 @@ def test_resource(app, api, client, sa_session):
 
     response = client.get('/api/v1/user')
     assert len(response.json) == 1
+
+    response = client.get('/api/v1/user?where={"role": "test"}')
+    assert len(response.json) == 1
+
+    response = client.get('/api/v1/user?where={"role": "unknown"}')
+    assert not response.json

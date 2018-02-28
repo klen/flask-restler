@@ -4,15 +4,14 @@ from types import FunctionType
 from sqlalchemy import func
 
 from .filters import Filter as VanilaFilter, Filters
-from .resource import ResourceOptions, Resource, APIError
+from .resource import ResourceOptions, Resource, APIError, logger
 
 
 try:
     from sqlalchemy.inspection import inspect
     from marshmallow_sqlalchemy import ModelSchema
 except ImportError:
-    import logging
-    logging.error('Marshmallow-SQLAlchemy should be installed to use the integration.')
+    logger.error('Marshmallow-SQLAlchemy should be installed to use the integration.')
     raise
 
 
@@ -22,12 +21,27 @@ class Filter(VanilaFilter):
     operators['$in'] = lambda c, v: c.in_(v)
     operators['$nin'] = lambda c, v: ~c.in_(v)
 
-    def filter(self, collection, data, view=None, **kwargs):
-        ops = self.parse(data)
-        prop = getattr(view.meta.model, self.name, None)
-        if not prop:
+    mfield = None
+
+    def __init__(self, name, fname=None, field=None, mfield=None):
+        """Initialize filter.
+
+        :param mfield: Model field
+        """
+        super(Filter, self).__init__(name, fname, field)
+        self.mfield = mfield or self.mfield
+
+    def apply(self, collection, ops, view=None, **kwargs):
+        if not self.mfield and view is None:
             return collection
-        return collection.filter(*(op(prop, val) for op, val in ops))
+
+        logger.debug('Apply filter %s (%r)', self.name, ops)
+
+        mfield = self.mfield or getattr(view.meta.model, self.name, None)
+        if not mfield:
+            return collection
+        collection = collection.filter(*(op(mfield, val) for op, val in ops))
+        return collection
 
 
 class ModelFilters(Filters):
