@@ -101,7 +101,7 @@ class ModelResource(Resource):
     def get_many(self, *args, **kwargs):
         return self.meta.session.query(self.meta.model).filter()
 
-    def sort(self, collection, *sorting, **Kwargs):
+    def sort(self, collection, *sorting, **kwargs):
         sorting_ = []
         for name, desc in sorting:
             prop = getattr(self.meta.model, name, None)
