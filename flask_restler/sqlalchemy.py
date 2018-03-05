@@ -29,16 +29,16 @@ class Filter(VanilaFilter):
         :param mfield: Model field
         """
         super(Filter, self).__init__(name, fname, field)
-        self.mfield = mfield or self.mfield
+        self.mfield = mfield if mfield is not None else self.mfield
 
     def apply(self, collection, ops, view=None, **kwargs):
-        if not self.mfield and view is None:
+        if self.mfield is not None and view is None:
             return collection
 
         logger.debug('Apply filter %s (%r)', self.name, ops)
 
-        mfield = self.mfield or getattr(view.meta.model, self.name, None)
-        if not mfield:
+        mfield = self.mfield if self.mfield is not None else getattr(view.meta.model, self.name, None)
+        if mfield is None:
             return collection
         collection = collection.filter(*(op(mfield, val) for op, val in ops))
         return collection
