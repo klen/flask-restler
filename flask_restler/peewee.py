@@ -1,6 +1,7 @@
 """Support Peewee ORM."""
 from __future__ import absolute_import
-from peewee import SQL
+from peewee import SQL, Field
+from flask._compat import string_types
 
 from .resource import ResourceOptions, Resource, APIError, logger
 from .filters import Filter as VanilaFilter, Filters
@@ -80,6 +81,10 @@ class ModelResourceOptions(ResourceOptions):
         self.name = (self.meta and getattr(self.meta, 'name', None)) or \
             self.model and self.model._meta.db_table or self.name
 
+        self.sorting = dict(
+            (isinstance(n, Field) and n.name or n, prop)
+            for (n, prop) in self.sorting.items())
+
         if not self.model:
             return None
 
@@ -115,8 +120,10 @@ class ModelResource(Resource):
         """Sort resources."""
         logger.debug('Sort collection: %r', sorting)
         sorting_ = []
-        for name, desc in sorting:
-            field = self.meta.model._meta.fields.get(name) or SQL(name)
+        for field, desc in sorting:
+            if isinstance(field, string_types):
+                field = self.meta.model._meta.fields.get(field) or SQL(field)
+
             if desc:
                 field = field.desc()
             sorting_.append(field)

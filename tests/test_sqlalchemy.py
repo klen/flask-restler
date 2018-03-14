@@ -59,7 +59,7 @@ def test_resource(app, api, client, sa_session):
             session = lambda: sa_session  # noqa
             filters = 'login', 'name', Filter('role', mfield=Role.name)
             schema_exclude = 'password',
-            sorting = 'login',
+            sorting = 'login', User.name
 
         def get_many(self, **kwargs):
             """Join on Role for roles filters."""
@@ -80,9 +80,9 @@ def test_resource(app, api, client, sa_session):
     assert response.json
 
     response = client.put_json('/api/v1/user/1', {
-        'name': 'Mike Summer',
+        'name': 'Aaron Summer',
     })
-    assert response.json['name'] == 'Mike Summer'
+    assert response.json['name'] == 'Aaron Summer'
 
     response = client.post_json('/api/v1/user', {
         'login': 'dave',
@@ -95,6 +95,9 @@ def test_resource(app, api, client, sa_session):
 
     response = client.get('/api/v1/user?sort=login,unknown')
     assert response.json[0]['login'] == 'dave'
+
+    response = client.get('/api/v1/user?sort=name,login')
+    assert response.json[0]['login'] == 'mike'
 
     response = client.get('/api/v1/user?sort=-login')
     assert response.json[0]['login'] == 'mike'

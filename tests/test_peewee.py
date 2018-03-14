@@ -44,7 +44,7 @@ def test_resource(app, api, client):
             model = User
             filters = 'name', 'login'
             schema_exclude = 'password',
-            sorting = 'login',
+            sorting = 'login', User.name
 
     response = client.get('/api/v1/user')
     assert not response.json
@@ -57,9 +57,9 @@ def test_resource(app, api, client):
     assert response.json
 
     response = client.put_json('/api/v1/user/1', {
-        'name': 'Mike Summer',
+        'name': 'Aaron Summer',
     })
-    assert response.json['name'] == 'Mike Summer'
+    assert response.json['name'] == 'Aaron Summer'
 
     response = client.post_json('/api/v1/user', {
         'login': 'dave',
@@ -76,6 +76,9 @@ def test_resource(app, api, client):
 
     response = client.get('/api/v1/user?sort=login')
     assert response.json[0]['login'] == 'dave'
+
+    response = client.get('/api/v1/user?sort=name')
+    assert response.json[0]['login'] == 'mike'
 
     response = client.get('/api/v1/user?sort=-login')
     assert response.json[0]['login'] == 'zigmund'

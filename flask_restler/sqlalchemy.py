@@ -2,6 +2,8 @@ from __future__ import absolute_import
 
 from types import FunctionType
 from sqlalchemy import func
+from sqlalchemy.orm.attributes import QueryableAttribute
+from flask._compat import string_types
 
 from .filters import Filter as VanilaFilter, Filters
 from .resource import ResourceOptions, Resource, APIError, logger
@@ -53,7 +55,13 @@ class ModelResourceOptions(ResourceOptions):
 
     def __init__(self, cls):
         self._session = None
+
         super(ModelResourceOptions, self).__init__(cls)
+
+        self.sorting = dict(
+            (isinstance(n, QueryableAttribute) and n.name or n, prop)
+            for (n, prop) in self.sorting.items())
+
         self.name = (self.meta and getattr(self.meta, 'name', None)) or \
             self.model and self.model.__tablename__ or self.name
 
@@ -103,15 +111,20 @@ class ModelResource(Resource):
 
     def sort(self, collection, *sorting, **kwargs):
         sorting_ = []
-        for name, desc in sorting:
-            prop = getattr(self.meta.model, name, None)
+        for prop, desc in sorting:
+            if isinstance(prop, string_types):
+                prop = getattr(self.meta.model, prop, None)
+
             if prop is None:
                 continue
+
             if desc:
                 prop = prop.desc()
+
             sorting_.append(prop)
+
         if sorting_:
-            collection = collection.order_by(*sorting_)
+            collection = collection.order_by(None).order_by(*sorting_)
         return collection
 
     def get_one(self, *args, **kwargs):

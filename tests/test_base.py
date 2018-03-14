@@ -36,8 +36,13 @@ def test_resource(app, api, client):
     @api.route
     class HelloResource(Resource):
 
+        class Meta:
+            sorting = 'test',
+
         def get(self, resource=None, **kwargs):
             return 'Hello, %s!' % (resource and resource.title() or 'World')
+
+    assert HelloResource.meta.sorting == {'test': 'test'}
 
     @api.route('/hello/<name>/how-are-you')
     class HowAreYouResource(Resource):

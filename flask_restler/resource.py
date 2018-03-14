@@ -78,6 +78,9 @@ class ResourceOptions(object):
         # Setup filters
         self.filters = self.filters_converter(self.filters, cls)
 
+        # Setup sorting
+        self.sorting = dict(n if isinstance(n, (list, tuple)) else (n, n) for n in self.sorting)
+
     def __repr__(self):
         return "<Options %s>" % self.cls
 
@@ -189,7 +192,8 @@ class Resource(with_metaclass(ResourceMeta, View)):
             if SORT_ARG in request.args:
                 sorting = ((name.strip('-'), name.startswith('-'))
                            for name in request.args[SORT_ARG].split(','))
-                sorting = ((n, d) for n, d in sorting if n in self.meta.sorting)
+                sorting = (
+                    (self.meta.sorting.get(n), d) for n, d in sorting if n in self.meta.sorting)
                 self.collection = self.sort(self.collection, *sorting, **kwargs)
 
             # Paginate resources
