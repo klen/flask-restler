@@ -234,7 +234,7 @@ class Resource(with_metaclass(ResourceMeta, View)):
     def authorize(self, *args, **kwargs):
         """Default authorization method."""
         if self.api is not None:
-            return self.api.authorize(*args, **kwargs)
+            return self.api.authorize(self, *args, **kwargs)
         return current_user
 
     def get_many(self, *args, **kwargs):
