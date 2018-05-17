@@ -22,6 +22,11 @@ class Filter(VanilaFilter):
     operators = VanilaFilter.operators
     operators['$in'] = lambda c, v: c.in_(v)
     operators['$nin'] = lambda c, v: ~c.in_(v)
+    operators['$ilike'] = lambda c, v: c.ilike(v)
+    operators['$notilike'] = lambda c, v: c.notilike(v)
+    operators['$like'] = lambda c, v: c.like(v)
+    operators['$notlike'] = lambda c, v: c.notlike(v)
+    operators['$match'] = lambda c, v: c.match(v)
 
     mfield = None
 
@@ -39,7 +44,8 @@ class Filter(VanilaFilter):
 
         logger.debug('Apply filter %s (%r)', self.name, ops)
 
-        mfield = self.mfield if self.mfield is not None else getattr(view.meta.model, self.name, None)
+        mfield = self.mfield if self.mfield is not None else getattr(
+            view.meta.model, self.name, None)
         if mfield is None:
             return collection
         collection = collection.filter(*(op(mfield, val) for op, val in ops))
