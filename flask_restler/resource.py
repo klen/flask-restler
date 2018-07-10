@@ -167,6 +167,7 @@ class Resource(with_metaclass(ResourceMeta, View)):
         for m in methods:
             params[m.lower()] = proxy
         params['methods'] = methods
+        params['__doc__'] = func.__doc__
         return type(func.__name__, (cls,), params)
 
     def dispatch_request(self, *args, **kwargs):
