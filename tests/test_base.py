@@ -12,6 +12,8 @@ def test_simple_view(app, api, client):
     def view(*args, **kwargs):
         return {'ok': True}
 
+    assert view.methods == {'GET', 'POST'}
+
     response = client.get('/api/v1/simple')
     assert response.json == {'ok': True}
 

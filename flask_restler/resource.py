@@ -3,28 +3,32 @@
 from __future__ import absolute_import
 
 import collections
-import math
 import logging
+import math
+import re
 
+from apispec import utils
 from flask import request, current_app, abort, Response
 from flask._compat import with_metaclass
 from flask.json import dumps
 from flask.views import View
-
-try:
-    from urllib.parse import urlencode
-except ImportError:
-    from urllib import urlencode
 
 from . import APIError, logger
 from .auth import current_user
 from .filters import Filters, FILTERS_ARG
 
 
+try:
+    from urllib.parse import urlencode
+except ImportError:
+    from urllib import urlencode
+
+
 PER_PAGE_ARG = 'per_page'
 PAGE_ARG = 'page'
 SORT_ARG = 'sort'
 INTERNAL_ARGS = set([PER_PAGE_ARG, PAGE_ARG, SORT_ARG, FILTERS_ARG])
+RE_URL = re.compile(r'<(?:[^:<>]+:)?([^<>]+)>')
 
 
 class ResourceOptions(object):
@@ -152,7 +156,7 @@ class Resource(with_metaclass(ResourceMeta, View)):
         super(Resource, self).__init__(**kwargs)
 
     @classmethod
-    def from_func(cls, func, methods=None, **options):
+    def from_func(cls, func, methods=None, **params):
 
         if methods is None:
             methods = ['GET']
@@ -160,7 +164,8 @@ class Resource(with_metaclass(ResourceMeta, View)):
         def proxy(self, *args, **kwargs):
             return func(self, *args, **kwargs)
 
-        params = {m.lower(): proxy for m in methods}
+        for m in methods:
+            params[m.lower()] = proxy
         params['methods'] = methods
         return type(func.__name__, (cls,), params)
 
@@ -312,6 +317,85 @@ class Resource(with_metaclass(ResourceMeta, View)):
         if resource is None:
             raise APIError('Resource not found', status_code=404)
         self.collection.remove(resource)
+
+    @classmethod
+    def update_specs(cls, specs):
+        operations = utils.load_operations_from_docstring(cls.__doc__) or {}
+        if cls.Schema:
+            specs.definition(cls.meta.name, schema=cls.Schema)
+
+        specs.add_path(RE_URL.sub(r'{\1}', cls.meta.url), operations=cls.update_operations_specs(
+            dict(operations), ('GET', 'POST'),
+        ))
+
+        if cls.meta.url_detail:
+            specs.add_path(
+                RE_URL.sub(r'{\1}', cls.meta.url_detail), operations=cls.update_operations_specs(
+                    operations, ('GET', 'PUT', 'PATCH', 'DELETE'), parameters=[{
+                        'name': cls.meta.name,
+                        'in': 'path',
+                        'description': 'Resource Identifier',
+                        'type': 'string',
+                        'required': True,
+                    }]
+                ))
+
+        for endpoint, (url_, name_, params_) in cls.meta.endpoints.values():
+            specs.add_path(
+                RE_URL.sub(r'{\1}', "%s%s" % (cls.meta.url.rstrip('/'), url_)),
+                operations=cls.update_operations_specs(
+                    operations, params_.get('methods', ('GET',)), method=getattr(cls, name_, None)
+                ))
+
+    @classmethod
+    def update_operations_specs(cls, operations, methods, method=None, **defaults):
+        operations = operations or {}
+        for method_name in methods:
+            if method is None and method_name not in cls.methods:
+                continue
+
+            method_name = method_name.lower()
+            cls_method = method or getattr(cls, method_name, None)
+            if not cls_method:
+                continue
+
+            defaults.setdefault('consumes', ['application/json'])
+            defaults.setdefault('produces', ['application/json'])
+            defaults.setdefault('tags', [cls.meta.name])
+            defaults.setdefault('summary', (
+                cls_method.__doc__ and cls_method.__doc__.strip() or
+                cls.__doc__ and cls.__doc__.strip() or None
+            ))
+            defaults.setdefault('responses', {
+                200: {
+                    'description': 'OK',
+                    'content': {'application/json': {}},
+                }
+            })
+            if cls.Schema:
+                defaults['responses'][200]['schema'] = {'$ref': '#/definitions/%s' % cls.meta.name}
+
+            if method_name in ('put', 'patch', 'post'):
+                defaults.setdefault('parameters', [])
+                defaults['parameters'].append({
+                    'name': 'body',
+                    'in': 'body',
+                    'description': 'Resource Body',
+                    'required': True,
+                    'schema': {}
+                })
+
+            if method_name in operations:
+                defaults.update(operations[method_name])
+                operations[method_name] = defaults
+                continue
+
+            docstring_yaml = utils.load_yaml_from_docstring(cls_method.__doc__)
+            if docstring_yaml:
+                defaults.update(docstring_yaml)
+
+            operations[method_name] = defaults
+        return operations
 
 
 def make_pagination_headers(limit, curpage, total, link_header=True):

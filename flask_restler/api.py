@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-from flask import Blueprint, jsonify, request, render_template, json
+from flask import Blueprint, jsonify, request, render_template, json, Response
 from flask._compat import string_types, PY2
 import os
 import urllib
@@ -11,7 +11,9 @@ from . import APIError
 from .auth import current_user
 
 from .resource import Resource
-from apispec.ext.marshmallow.swagger import schema2jsonschema
+from apispec import APISpec
+from apispec.ext.marshmallow import MarshmallowPlugin
+#  from apispec.ext.marshmallow.swagger import schema2jsonschema
 
 if PY2:
     urlencode = urllib.urlencode
@@ -48,11 +50,12 @@ class Api(Blueprint):
         self.app = app
         app.errorhandler(APIError)(self.handle_error)
         if self.specs:
-            self.route('/_specs')(self.specs_view)
+            self.route('/_specs', params=dict(authorize=anonimous, update_specs=anonimous))(
+                self.specs_view)
 
-            @self.route('/')
-            def specs_html(): # noqa
-                return render_template('swagger.html')
+            @self.route('/', params=dict(authorize=anonimous, update_specs=anonimous))
+            def specs_html(*args, **kwargs): # noqa
+                return Response(render_template('swagger.html'))
 
         return super(Api, self).register(app, options or {}, first_registration)
 
@@ -78,7 +81,7 @@ class Api(Blueprint):
         warnings.warn('The @connect method is depricated, use @route instead.')
         return self.route(*args, **kwargs)
 
-    def route(self, resource=None, url=None, url_detail=DEFAULT, **options):
+    def route(self, resource=None, url=None, url_detail=DEFAULT, params=None, **options):
         """Connect resource to the API."""
 
         api = self
@@ -86,7 +89,7 @@ class Api(Blueprint):
         def wrapper(res):
 
             if not isclass(res):
-                res = Resource.from_func(res, **options)
+                res = Resource.from_func(res, methods=options.get('methods'), **(params or {}))
 
             elif not issubclass(res, Resource):
                 raise ValueError('Resource should be subclass of api.Resource.')
@@ -145,126 +148,23 @@ class Api(Blueprint):
             return resource.dispatch_request(**kwargs)
 
     def specs_view(self, *args, **kwargs):
-        specs = {
-            'openapi': '3.0.0',
-            'info': {
-                'title': self.name,
-                'description': self.__doc__,
-                'version': self.version,
-            },
-            'basePath': self.url_prefix,
-            'tags': [],
-            'paths': {},
-            'components': {'schemas': {}},
-            'host': request.host,
-        }
+        specs = APISpec(title=self.name, version=self.version,
+                        basePath=self.url_prefix, host=request.host, plugins=[MarshmallowPlugin()])
 
         for resource in self.resources:
+            resource.update_specs(specs)
 
-            defaults = {
-                'consumes': ['application/json'],
-                'produces': ['application/json'],
-                'security': [{'api_key': []}],
-                'tags': [resource.meta.name],
-                'responses': {
-                    200: {
-                        'description': 'OK',
-                        'content': {
-                            'application/json': {
-                            }
-                        }
-                    }
-                }
-            }
-            if resource.Schema:
-                jsonschema = schema2jsonschema(resource.Schema)
-                for prop in jsonschema.get('properties', {}).values():
-                    if prop.get('type') == 'string' and prop.get('default'):
-                        prop['default'] = str(prop['default'])
-
-                specs['components']['schemas'][resource.meta.name] = jsonschema
-                defaults['responses'][200]['content']['application/json']['schema'] = {
-                    '$ref':  '#/components/schemas/{}'.format(resource.meta.name)
-                }
-
-            specs['tags'].append({
-                'name': resource.meta.name,
-                'description': resource.__doc__ or resource.__class__.__doc__,
-            })
-
-            for endpoint, (url_, name_, params_) in resource.meta.endpoints.values():
-                specs['paths'][
-                    "%s/%s" % (resource.meta.url.rstrip('/'), url_flask_to_swagger(url_))] = path = {}
-                path['get'] = dict(
-                    summary=endpoint.__doc__,
-                    description=endpoint.__doc__,
-                    **defaults)
-                if hasattr(endpoint, 'specs'):
-                    path['get'].update(endpoint.specs)
-
-            specs['paths'][resource.meta.url] = path = {}
-            for method in ('get', 'post'):
-                if method.upper() not in resource.methods or not hasattr(resource, 'post'):
-                    continue
-                view = getattr(resource, method)
-                path[method] = dict(summary=view.__doc__, description=view.__doc__, **defaults)
-
-                if method == 'post':
-                    params = {
-                        'in': 'body',
-                        'name': 'body',
-                        'description': 'resource body',
-                        'required': True,
-                        'schema': {},
-                    }
-                    if resource.Schema:
-                        params['schema']['$ref'] = '#/components/schemas/{}'.format(
-                            resource.meta.name)
-
-                    path[method]['parameters'] = [params]
-
-                if resource.meta.specs:
-                    path[method].update(resource.meta.specs)
-
-            if resource.meta.url_detail:
-                url_detail = url_flask_to_swagger(resource.meta.url_detail)
-                path = specs['paths'][url_detail] = {}
-                for method in ('get', 'put', 'delete'):
-                    if method.upper() not in resource.methods or not hasattr(resource, 'post'):
-                        continue
-                    view = getattr(resource, method)
-                    path[method] = dict(
-                        summary=view.__doc__, description=view.__doc__,
-                        parameters=[{
-                            'name': resource.meta.name,
-                            'in': 'path',
-                            'description': 'ID of resource',
-                            'type': 'string',
-                            'required': True
-                        }], **defaults)
-
-                    if method == 'put':
-                        params = {
-                            'in': 'body',
-                            'name': 'body',
-                            'description': 'resource body',
-                            'required': True,
-                            'schema': {},
-                        }
-                        if resource.Schema:
-                            params['schema']['$ref'] = '#/components/schemas/{}'.format(
-                                resource.meta.name)
-                        path[method]['parameters'].append(params)
-
-                if resource.meta.specs:
-                    path[method].update(resource.meta.specs)
-
+        specs = specs.to_dict()
         if isinstance(self.specs, dict):
             specs.update(self.specs)
-
         return specs
 
 
 def url_flask_to_swagger(source):
     """Convert Flask URL to swagger path."""
     return source.replace('<', '{').replace('>', '}')
+
+
+@staticmethod
+def anonimous(*args, **kwargs):
+    return True

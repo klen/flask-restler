@@ -104,6 +104,11 @@ def test_resource(app, api, client, sa_session):
 
     response = client.get('/api/v1/user?where={"login": "dave"}')
     assert len(response.json) == 1
+    assert response.json[0]['login'] == 'dave'
+
+    response = client.get('/api/v1/user?where={"login": {"$like": "da%"}}')
+    assert len(response.json) == 1
+    assert response.json[0]['login'] == 'dave'
 
     response = client.delete('/api/v1/user/1')
     assert not response.json
