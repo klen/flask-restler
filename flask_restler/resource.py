@@ -360,13 +360,15 @@ class Resource(with_metaclass(ResourceMeta, View)):
             if not cls_method:
                 continue
 
+            docstring = clean_doc(cls_method.__doc__, cls.__doc__)
+
             defaults.setdefault('consumes', ['application/json'])
             defaults.setdefault('produces', ['application/json'])
             defaults.setdefault('tags', [cls.meta.name])
-            defaults.setdefault('summary', (
-                cls_method.__doc__ and cls_method.__doc__.strip() or
-                cls.__doc__ and cls.__doc__.strip() or None
-            ))
+            if docstring:
+                defaults.setdefault('summary', docstring.split('\n')[0])
+                defaults.setdefault('description', docstring)
+
             defaults.setdefault('responses', {
                 200: {
                     'description': 'OK',
@@ -378,12 +380,15 @@ class Resource(with_metaclass(ResourceMeta, View)):
 
             if method_name in ('put', 'patch', 'post'):
                 defaults.setdefault('parameters', [])
+                schema = {}
+                if cls.Schema:
+                    schema['$ref'] = '#/definitions/%s' % cls.meta.name
                 defaults['parameters'].append({
                     'name': 'body',
                     'in': 'body',
                     'description': 'Resource Body',
                     'required': True,
-                    'schema': {}
+                    'schema': schema,
                 })
 
             if method_name in operations:
@@ -419,6 +424,16 @@ def make_pagination_headers(limit, curpage, total, link_header=True):
 
     headers['Link'] = ",".join(['<%s>; rel="%s"' % (v, n) for n, v in links.items()])
     return headers
+
+
+def clean_doc(*values):
+    """Clean doc string."""
+    for v in values:
+        v = v and v.split('---')[0].strip()
+        if v:
+            return v
+
+    return None
 
 
 # pylama:ignore=R0201
