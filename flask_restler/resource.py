@@ -101,7 +101,6 @@ class ResourceMeta(type):
 
 
 class Resource(with_metaclass(ResourceMeta, View)):
-    """Base API Resource object."""
 
     OPTIONS_CLASS = ResourceOptions
 
@@ -287,7 +286,6 @@ class Resource(with_metaclass(ResourceMeta, View)):
         return self.collection[offset: offset + limit], len(self.collection)
 
     def get(self, resource=None, **kwargs):
-        """Get resource or collection of resources."""
         logger.debug('Get resources (%r)', resource)
         if resource is not None and resource != '':
             return self.to_simple(resource, resource=resource, **kwargs)
@@ -295,7 +293,6 @@ class Resource(with_metaclass(ResourceMeta, View)):
         return self.to_simple(self.collection, many=True, **kwargs)
 
     def post(self, **kwargs):
-        """Create a resource."""
         data = request.json or {}
         resource = self.load(data, **kwargs)
         resource = self.save(resource)
@@ -313,7 +310,6 @@ class Resource(with_metaclass(ResourceMeta, View)):
     patch = put
 
     def delete(self, resource=None, **kwargs):
-        """Delete a resource."""
         logger.debug('Delete a resource (%r)', resource)
         if resource is None:
             raise APIError('Resource not found', status_code=404)
