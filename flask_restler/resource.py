@@ -120,7 +120,7 @@ class Resource(with_metaclass(ResourceMeta, View)):
         per_page = 100
 
         # link_header: Add Link header with pagination
-        page_link_header = True
+        page_link_header = False
 
         # url: URL for collection, if it is None it will be calculated
         # url_detail: URL for resource detail, if it is None it will be calculated
@@ -317,25 +317,25 @@ class Resource(with_metaclass(ResourceMeta, View)):
 
     @classmethod
     def update_specs(cls, specs):
-        operations = utils.load_operations_from_docstring(cls.__doc__) or {}
         if cls.Schema:
             specs.definition(cls.meta.name, schema=cls.Schema)
 
+        operations = utils.load_operations_from_docstring(cls.__doc__)
         specs.add_path(RE_URL.sub(r'{\1}', cls.meta.url), operations=cls.update_operations_specs(
-            dict(operations), ('GET', 'POST'),
+            operations, ('GET', 'POST'),
         ))
 
         if cls.meta.url_detail:
-            specs.add_path(
-                RE_URL.sub(r'{\1}', cls.meta.url_detail), operations=cls.update_operations_specs(
-                    operations, ('GET', 'PUT', 'PATCH', 'DELETE'), parameters=[{
-                        'name': cls.meta.name,
-                        'in': 'path',
-                        'description': 'Resource Identifier',
-                        'type': 'string',
-                        'required': True,
-                    }]
-                ))
+            ops = cls.update_operations_specs(
+                operations, ('GET', 'PUT', 'PATCH', 'DELETE'), parameters=[{
+                    'name': cls.meta.name,
+                    'in': 'path',
+                    'description': 'Resource Identifier',
+                    'type': 'string',
+                    'required': True,
+                }]
+            )
+            specs.add_path(RE_URL.sub(r'{\1}', cls.meta.url_detail), operations=ops)
 
         for endpoint, (url_, name_, params_) in cls.meta.endpoints.values():
             specs.add_path(
@@ -345,8 +345,9 @@ class Resource(with_metaclass(ResourceMeta, View)):
                 ))
 
     @classmethod
-    def update_operations_specs(cls, operations, methods, method=None, **defaults):
+    def update_operations_specs(cls, operations, methods, method=None, **specs):
         operations = operations or {}
+        result = {}
         for method_name in methods:
             if method is None and method_name not in cls.methods:
                 continue
@@ -356,20 +357,18 @@ class Resource(with_metaclass(ResourceMeta, View)):
             if not cls_method:
                 continue
 
-            docstring = clean_doc(cls_method.__doc__, cls.__doc__)
-
+            defaults = dict(specs)
             defaults.setdefault('consumes', ['application/json'])
             defaults.setdefault('produces', ['application/json'])
             defaults.setdefault('tags', [cls.meta.name])
+
+            docstring = clean_doc(cls_method.__doc__, cls.__doc__)
             if docstring:
                 defaults.setdefault('summary', docstring.split('\n')[0])
                 defaults.setdefault('description', docstring)
 
             defaults.setdefault('responses', {
-                200: {
-                    'description': 'OK',
-                    'content': {'application/json': {}},
-                }
+                200: {'description': 'OK', 'content': {'application/json': {}}}
             })
             if cls.Schema:
                 defaults['responses'][200]['schema'] = {'$ref': '#/definitions/%s' % cls.meta.name}
@@ -379,6 +378,7 @@ class Resource(with_metaclass(ResourceMeta, View)):
                 schema = {}
                 if cls.Schema:
                     schema['$ref'] = '#/definitions/%s' % cls.meta.name
+
                 defaults['parameters'].append({
                     'name': 'body',
                     'in': 'body',
@@ -389,15 +389,13 @@ class Resource(with_metaclass(ResourceMeta, View)):
 
             if method_name in operations:
                 defaults.update(operations[method_name])
-                operations[method_name] = defaults
-                continue
 
             docstring_yaml = utils.load_yaml_from_docstring(cls_method.__doc__)
             if docstring_yaml:
                 defaults.update(docstring_yaml)
 
-            operations[method_name] = defaults
-        return operations
+            result[method_name] = defaults
+        return result
 
 
 def make_pagination_headers(limit, curpage, total, link_header=True):
