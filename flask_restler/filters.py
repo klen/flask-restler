@@ -26,12 +26,13 @@ class Filter(object):
     }
 
     list_ops = '$in',
+    field_cls = fields.Raw
 
     def __init__(self, name, fname=None, field=None):
         """Initialize filter."""
         self.name = name
         self.fname = fname or name
-        self.field = field or fields.Raw(attribute=name)
+        self.field = field or self.field_cls(attribute=name)
 
     def __repr__(self):
         return '<Filter %s>' % (self.field.attribute or self.name or self.fname)
