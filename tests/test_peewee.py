@@ -55,6 +55,7 @@ def test_resource(app, api, client):
     })
     assert 'password' not in response.json
     assert response.json
+    assert response.json['id']
 
     response = client.put_json('/api/v1/user/1', {
         'name': 'Aaron Summer',

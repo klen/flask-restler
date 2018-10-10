@@ -79,7 +79,7 @@ class ModelResourceOptions(ResourceOptions):
         """Get meta from given model."""
         super(ModelResourceOptions, self).__init__(cls)
         self.name = (self.meta and getattr(self.meta, 'name', None)) or \
-            self.model and self.model._meta.db_table or self.name
+            self.model and self.model._meta.table_name or self.name
 
         self.sorting = dict(
             (isinstance(n, Field) and n.name or n, prop)
@@ -87,6 +87,9 @@ class ModelResourceOptions(ResourceOptions):
 
         if not self.model:
             return None
+
+        if not self.primary_key:
+            self.primary_key = self.model._meta.get_primary_keys()[0]
 
         if not cls.Schema:
             meta = type('Meta', (object,), dict({'model': self.model}, **self.schema_meta))
@@ -107,9 +110,10 @@ class ModelResource(Resource):
 
         """Default options."""
 
-        model = None
         filters_converter = ModelFilters
+        model = None
         models_converter = None
+        primary_key = None
         schema = {}
 
     def get_many(self, *args, **kwargs):
@@ -138,7 +142,7 @@ class ModelResource(Resource):
             return None
 
         try:
-            resource = self.collection.where(self.meta.model._meta.primary_key == resource).get()
+            resource = self.collection.where(self.meta.primary_key == resource).get()
         except self.meta.model.DoesNotExist:
             raise APIError('Resource not found', status_code=404)
 

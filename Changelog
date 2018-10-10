@@ -1,3 +1,7 @@
+2018-10-10  klen
+
+	* Support Peewee 3 (for Peewee2 use version 1.19.5)
+
 2016-03-29  klen
 
 	* Support Peewee
