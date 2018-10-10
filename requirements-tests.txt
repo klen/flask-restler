@@ -8,6 +8,6 @@ mongomock==3.8.0
 pymongo==3.4.0
 
 ipdb                    == 0.10.3
-pytest==3.8.2
-pytest-flask            == 0.10.0
+pytest                  == 3.8.2
+pytest-flask            == 0.13.0
 pytest-sugar            == 0.8.0
